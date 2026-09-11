@@ -6,7 +6,7 @@ Updated 11 September 2026. Target: `dkiqgwziefazwrcieavq`, TOPHILLSLAUNDRYJOURNA
 
 The protected Edge API is deployed and its database health check returns HTTP 200.
 All 18 PostgreSQL application tables exist with RLS enabled; browser roles have no direct grants.
-The private bucket `top-hills-evidence` exists (10 MiB limit). The existing Site is still using D1/R2 until complete export/import verification and explicit runtime cutover.
+The private bucket `top-hills-evidence` exists (10 MiB limit). Complete source export and import have been verified across all 18 tables, including every field fingerprint, original ID, revision and owner record. A private full backup is retained. The source object inventory is empty. Runtime activation follows publishing this cutover source.
 
 ## Architecture
 
@@ -54,7 +54,7 @@ There is no automatic fallback to D1/R2. Those sources remain untouched for roll
 ## Verification
 
 - 62 existing finance, laundry and authentication API scenarios pass against local PostgreSQL/PGlite.
-- 13 mocked diagnostic and backend boundary checks pass, including transaction rollback, credential isolation, export completeness, and deletion-stable Storage pagination.
+- 14 mocked diagnostic and backend boundary checks pass, including transaction rollback, credential isolation, export completeness, and deletion-stable Storage pagination.
 - Existing Node.js 24 finance, laundry, auth and cache suites pass.
 - GitHub Actions builds both backends and runs tests on local/fake data only. No deployment, secrets, production URLs or production database access in CI.
 

@@ -34,7 +34,8 @@ Deno.serve(async req => {
     const path = new URL(trusted.request.url).pathname;
     if (path === '/api/__backend/health') {
       const row = await env.DB.prepare('SELECT revision FROM workspace WHERE id=?').bind('main').first();
-      return Response.json({ok: true, database: 'postgres', workspacePresent: !!row, revision: row?.revision ?? null});
+      const bucket = await env.DB.prepare('SELECT public FROM storage.buckets WHERE id=?').bind('top-hills-evidence').first();
+      return Response.json({ok: true, database: 'postgres', workspacePresent: !!row, revision: row?.revision ?? null, privateStorage: bucket?.public === 0});
     }
     if (path.startsWith('/api/__backend/')) {
       if (path !== '/api/__backend/scheduled' || !trusted.internal || req.method !== 'POST') return new Response(null, {status: 404});

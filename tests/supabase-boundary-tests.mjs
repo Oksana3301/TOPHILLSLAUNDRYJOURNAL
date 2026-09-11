@@ -9,6 +9,15 @@ import {PostgresDatabase} from '../server/postgres-db.mjs';
 
 const origin = 'https://local.test', token = 'a'.repeat(64), key = 'b'.repeat(64);
 const config = {origin, tokenHash: createHash('sha256').update(token).digest('hex')};
+test('Live PostgreSQL and Site proxy modes close practice pages and practice writes', async () => {
+  const {default: worker} = await import('../dist/server/index.js');
+  for (const DATA_BACKEND of ['supabase', 'postgres']) {
+    for (const path of ['/demo', '/demo.html', '/sop-demo.html', '/api/laundry-demo/start']) {
+      const response = await worker.fetch(new Request(origin + path), {DATA_BACKEND});
+      assert.equal(response.status, 404);
+    }
+  }
+});
 test('Gateway denies untrusted callers before exposing identity or data', async () => {
   for (const authorization of ['', 'Bearer ' + 'c'.repeat(64)]) {
     assert.equal(await backendRequest(new Request(origin, {headers: {Authorization: authorization, 'oai-authenticated-user-id': 'owner'}}), config), null);
