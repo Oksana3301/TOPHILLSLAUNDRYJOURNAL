@@ -77,3 +77,11 @@ Worker saat ini memerlukan akses database melalui API HTTPS; jangan mengasumsika
 8. Buka penulisan setelah validasi. Rollback setelah ada transaksi baru wajib merekonsiliasi transaksi yang sudah masuk.
 
 Belum ada langkah cutover, perubahan runtime secret, perubahan schema produksi, atau data pelanggan yang dijalankan dalam handoff ini.
+
+## Pemeriksaan koneksi pada permintaan terbaru
+
+11 September 2026: pemasangan plugin Supabase telah dikonfirmasi berhasil. Namun sesi pengerjaan belum menerima operasi Supabase untuk daftar project, inspeksi tabel atau SQL. Karena itu project tujuan, skema dan data di Supabase belum terverifikasi. Jangan menyatakan database telah dipindahkan berdasarkan pemasangan plugin atau koneksi GitHub saja.
+
+Pemeriksaan metadata website mengonfirmasi 18 tabel di binding `DB`, sesuai daftar di atas. Tidak ada data pelanggan diekspor, secret runtime diubah, atau tabel produksi dihapus. Perubahan paket ganda menggunakan record JSON order yang sudah ada; semua field tambahan harus dipertahankan dalam migrasi.
+
+Langkah berikut yang diperlukan adalah membuka project Supabase dari koneksi yang sudah terpasang, mencocokkan schema/Storage aktual, lalu menyelesaikan adapter dan cutover di atas. Tidak perlu mengirim password atau service key ke percakapan. Penghapusan ruang latihan dan percobaan transaksi langsung mengikuti keberhasilan migrasi dan verifikasi, sesuai urutan permintaan Atika.

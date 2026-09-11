@@ -28,3 +28,26 @@ test('Portal finance detection makes unique proposals without posting or copying
 test('Shift handover records discrepancies, retains independent review and cannot self-approve',async()=>{const summary=(await call('laundry/summary')).body.summary;const form=new FormData();form.set('orderId','SHIFT-'+crypto.randomUUID());form.set('file',new File([new Uint8Array([255,216,255])],'closing.jpg'));const proof=(await call('laundry/proof',form,{user:'op'})).body;const r=await call('laundry/shift',{physicalBags:summary.physicalBags+1,cash:summary.cashInTransit||0,note:'Handover uji fiktif dengan selisih',proofId:proof.id,mutationId:crypto.randomUUID()},{user:'op'});assert.equal(r.status,200);assert.equal((await call('laundry/shift-review',{id:r.body.id,note:'Mencoba review sendiri'},{user:'op'})).status,403);const reviewed=await call('laundry/shift-review',{id:r.body.id,note:'Selisih tetap ditindaklanjuti'});assert.equal(reviewed.status,200);assert.equal(reviewed.body.status,'EXCEPTION OPEN');});
 
 test('Customer only reads own operational evidence, never bank or other-order proofs',async()=>{const row=sql.prepare('SELECT data FROM laundry_orders WHERE id=?').get(order.id),o=JSON.parse(row.data);assert.equal((await call('portal/proof?orderId='+o.id+'&id='+o.intakeProof,null,{user:null,token:orderToken})).status,200);assert.equal((await call('portal/proof?orderId='+o.id+'&id='+o.intakeProof,null,{user:null,token:'b'.repeat(64)})).status,404);const f=new FormData();f.set('orderId',o.id);f.set('file',new File([new Uint8Array([255,216,255])],'bank.jpg'));const privateProof=(await call('laundry/proof',f)).body;assert.equal((await call('portal/proof?orderId='+o.id+'&id='+privateProof.id,null,{user:null,token:orderToken})).status,404);});
+
+test('Multiple packages survive API persistence, revision conflicts and customer approval after an operator exception',async()=>{
+ const made=await call('laundry/assisted',{...data,roomId:'A01',serviceIds:['THL-regular-refresh','THL-bed-cover-l'],mutationId:crypto.randomUUID()},{user:'op'});
+ assert.equal(made.status,200,JSON.stringify(made));let current=made.body.order;
+ const key=new URLSearchParams(made.body.trackingPath.split('#')[1]).get('key');assert(key);
+ const f=new FormData();f.set('orderId',current.id);f.set('capture','live');f.set('file',new File([new Uint8Array([255,216,255,10])],'intake.jpg',{type:'image/jpeg'}));
+ const proof=(await call('laundry/proof',f,{user:'op'})).body;
+ const step=async(action,extra={},user='op')=>{const r=await call('laundry/action',{id:current.id,revision:current.revision,action,mutationId:crypto.randomUUID(),...extra},{user});assert.equal(r.status,200,JSON.stringify(r));current=r.body.order;};
+ await step('confirm-identity',{...data,serviceIds:['THL-regular-refresh','THL-bed-cover-l'],proofId:proof.id,reason:'Pemilik dan kamar sudah diperiksa'},'owner');
+ await step('accept');await step('receive',{proofId:proof.id,bags:2,location:'Rak uji'});
+ const before=current.revision,lines=[{serviceId:'THL-regular-refresh',weight:3},{serviceId:'THL-bed-cover-l',quantity:1}];
+ await step('weigh',{proofId:proof.id,lines});assert.equal(current.price.total,53000);
+ assert.equal((await call('laundry/action',{id:current.id,revision:before,action:'weigh',proofId:proof.id,lines,mutationId:crypto.randomUUID()})).status,409);
+ const persisted=JSON.parse(sql.prepare('SELECT data FROM laundry_orders WHERE id=?').get(current.id).data);
+ assert.equal(persisted.price.lines.length,2);assert.equal(sql.prepare("SELECT count(*) n FROM laundry_events WHERE order_id=? AND action='weigh'").get(current.id).n,1);
+ await step('process',{batch:'M1',scannedId:current.id,proceedWithoutApproval:true,overrideContext:'CUSTOMER_BUSY',reason:'Pelanggan sedang rapat dan sebelumnya sudah meminta pekerjaan dilanjutkan.'});
+ const publicOrder=(await call('portal/order?id='+current.id,null,{user:null,token:key})).body.order;
+ assert.equal(publicOrder.priceApproved,false);assert.equal(publicOrder.price.lines.length,2);assert(publicOrder.processingException.reason);assert.equal(publicOrder.processAuthorization,undefined);
+ const approved=await call('portal/action',{id:current.id,revision:current.revision,action:'approve-price',mutationId:crypto.randomUUID()},{user:null,token:key});
+ assert.equal(approved.status,200,JSON.stringify(approved));assert.equal(approved.body.order.priceApproved,true);
+ const saved=JSON.parse(sql.prepare('SELECT data FROM laundry_orders WHERE id=?').get(current.id).data);
+ assert.equal(saved.status,'IN PROCESS');assert.equal(saved.priceApproval.via,'CUSTOMER PORTAL');assert.equal(saved.exceptions.find(e=>e.type==='PROCESS WITHOUT CUSTOMER APPROVAL').open,false);
+});

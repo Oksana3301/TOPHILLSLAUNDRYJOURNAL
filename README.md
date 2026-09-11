@@ -76,3 +76,7 @@ Saat berpindah host, jangan mempercayai header `oai-authenticated-user-*` dari i
 Source versi 8 lolos pengujian otomatis lokal untuk finance, akun, alur laundry, API, cache dan 20 skenario demo. Belum dilakukan pengujian ponsel/kamera nyata, email Supabase nyata, QRIS atau WhatsApp provider. Audit SOP: 18 skenario inti tersedia, 8 sebagian, 2 integrasi belum aktif. Ini belum pernyataan siap operasional penuh.
 
 Perubahan handoff GitHub hanya menata dokumentasi, menyertakan SOP/referensi asli dan memperkuat aturan file yang diabaikan Git. Tidak ada reset, pemindahan database, pembayaran, atau publikasi website pada langkah handoff ini.
+
+## Pembaruan meja laundry
+
+Lihat [paket ganda, koreksi timbangan, dan pengecualian proses](docs/LAUNDRY-PACKAGES.md) untuk alur operator dan pelanggan. Status migrasi Supabase tetap dicatat terpisah pada handoff database.
