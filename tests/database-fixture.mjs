@@ -25,10 +25,10 @@ export async function createTestDatabase() {
   const DB = {prepare(query) { return {values: [], bind(...p) {this.values = p; return this;},
     async first() {return sql.prepare(query).get(...this.values) || null;},
     async all() {return {results: sql.prepare(query).all(...this.values)};},
-    async run() {return {meta: {changes: Number(sql.prepare(query).run(...this.values).changes)}};}
+    run() {if(/^\s*SELECT\b/i.test(query))return {results:sql.prepare(query).all(...this.values),meta:{changes:0}};return {meta: {changes: Number(sql.prepare(query).run(...this.values).changes)}};}
   }; }, async batch(items) {
     sql.exec('BEGIN');
-    try {const results = []; for (const s of items) results.push(await s.run()); sql.exec('COMMIT'); return results;}
+    try {const results = []; for (const s of items) results.push(s.run()); sql.exec('COMMIT'); return results;}
     catch (e) {sql.exec('ROLLBACK'); throw e;}
   }};
   return {DB, sql, close: () => sql.close()};

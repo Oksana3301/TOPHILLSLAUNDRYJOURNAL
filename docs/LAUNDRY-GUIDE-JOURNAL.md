@@ -54,3 +54,16 @@ Riwayat profil, penghuni, laporan, penilaian, dan pengaturan lama dirangkum saat
 Formulir kebijakan memakai nama bagian usaha, pilihan waktu setempat, dan pemilih tanggal libur. Identitas bagian usaha lama tetap dipertahankan saat namanya diubah. Tampilan linimasa pada layar kecil memakai kartu kegiatan; warna kertas, tinta, biru pastel, tipografi dan tanda status mengikuti referensi visual yang diunggah kembali.
 
 Regresi diuji untuk catatan lama yang lengkap/rusak, nama profil baru, bukti sebelum/sesudah, identitas petugas, nomor pesanan, label status, dan penyimpanan kebijakan. Tidak ada perubahan data operasional atau skema dalam perbaikan bahasa ini.
+
+
+## Meja kerja dan unggahan lebih ringkas
+
+Satu bagian **Kerjakan sekarang** menampilkan tindakan utama untuk peran dan tahap pesanan. Ringkasan semua langkah, rincian pesanan, bukti, laporan, dan panduan kondisi khusus memakai bagian yang dapat dibuka sesuai kebutuhan. Pembayaran/setoran tetap wajib ketika ada dana yang harus diselesaikan; persetujuan harga tidak dianggap selesai hanya karena petugas memulai proses dengan alasan.
+
+Foto dapat diambil langsung dalam formulir tindakan, termasuk identifikasi barang oleh Owner. Unggahan yang berhasil menambahkan metadata bukti dari respons server tanpa meminta seluruh detail pesanan lagi. Berkas galeri/PDF tetap asli; foto kamera dibatasi pada sisi terpanjang 1920 piksel, tanpa memperbesar gambar kecil. Pemilihan bukti tetap divalidasi oleh server berdasarkan pesanan dan jenis pengambilan.
+
+Kemajuan pengiriman dibedakan dari konfirmasi tersimpan. Klik berulang dan pengiriman tindakan ditahan selama penyiapan/unggahan foto. Setelah waktu tunggu habis, pengguna diminta memeriksa daftar bukti sebelum mengirim ulang; tidak ada pengulangan otomatis. Batas waktu lebih panjang hanya berlaku untuk pengiriman bukti. Pembaruan latar tetap aktif, tetapi tidak mengganti tampilan detail jika datanya sama dan berhenti sementara ketika formulir/kamera/unggahan digunakan.
+
+Pembacaan PostgreSQL terkait digabung dalam transaksi baca: detail pesanan, workspace/anggota, serta pesanan/riwayat jurnal. Pengambilan bukti untuk usulan laporan menghindari referensi kosong dan berulang. Transaksi penulisan, pemeriksaan akun, batas akses, revisi dan pemeriksa independen tetap berlaku. Ini mengurangi perjalanan ke database; bukan jaminan waktu unggah tertentu pada setiap jaringan.
+
+Regresi mencakup dokumen asli, kemajuan vs konfirmasi simpan, kegagalan/waktu tunggu, ukuran kamera, satu bagian kerja utama, panduan 28 skenario, unggahan ganda/perpindahan pesanan, metadata bukti privat, dan seluruh alur laporan di SQLite serta PostgreSQL lokal. Pengujian tampilan berbasis DOM tiruan; pemeriksaan visual browser tidak tersedia pada lingkungan rilis ini.

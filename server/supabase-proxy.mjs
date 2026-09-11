@@ -26,7 +26,7 @@ export async function proxySupabase(req, env, pathOverride) {
   try {
     const response = await fetch(env.SUPABASE_URL + '/functions/v1/tophills-api', {
       method: req.method, headers, body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
-      duplex: 'half', redirect: 'manual', signal: AbortSignal.timeout(45000)
+      duplex: 'half', redirect: 'manual', signal: AbortSignal.timeout(req.method==='POST'&&['/api/proof','/api/laundry/proof','/api/portal/proof'].includes(path)?110000:45000)
     });
     if (response.status >= 300 && response.status < 400) {
       await response.body?.cancel();

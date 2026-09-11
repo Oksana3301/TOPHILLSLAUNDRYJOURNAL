@@ -18,12 +18,15 @@ export function laundryCandidates(o){
 }
 export async function importLaundryFinance(env,w,m){
  const rows=(await env.DB.prepare("SELECT data FROM laundry_orders WHERE COALESCE(json_extract(data,'$.simulation'),0)=0 AND (status='COMPLETED' OR COALESCE(json_extract(data,'$.pay.received'),0)>0) ORDER BY created_at,id").all()).results;let added=0;
- for(const row of rows){const o=JSON.parse(row.data),base={sourceType:'portal',unit:'laundry',customer:'portal:'+o.id,customerName:o.customer.name,orderId:o.id,createdBy:m.id,createdAt:new Date().toISOString(),status:'Diajukan',fixture:false};
-  for(const c of laundryCandidates(o)){const key='portal:'+o.id+':'+c.suffix;const existing=w.finance.transactions.find(t=>t.sourceKey===key);if(existing){if(c.kind==='refund'&&c.cashAccount&&!existing.cashAccount&&!['Tercatat','Direversal'].includes(existing.status)){existing.cashAccount=c.cashAccount;existing.holdReason='';existing.status='Diajukan';existing.sourceUpdatedAt=o.updatedAt;added++;}continue;}
-   const proof=await env.DB.prepare('SELECT * FROM laundry_proofs WHERE id=? AND order_id=?').bind(c.proof||'',o.id).first();
+ const known=new Map(w.finance.transactions.map(t=>[t.sourceKey,t])),orders=rows.map(row=>JSON.parse(row.data)),proofKeys=new Map();
+ for(const o of orders)for(const c of laundryCandidates(o))if(c.proof&&!known.has('portal:'+o.id+':'+c.suffix))proofKeys.set(JSON.stringify([o.id,c.proof]),[o.id,c.proof]);
+ const keys=[...proofKeys.keys()],proofResults=keys.length?await env.DB.batch([...proofKeys.values()].map(([orderId,proofId])=>env.DB.prepare('SELECT * FROM laundry_proofs WHERE id=? AND order_id=?').bind(proofId,orderId))):[],proofs=new Map(keys.map((key,i)=>[key,proofResults[i].results[0]]));
+ for(const o of orders){const base={sourceType:'portal',unit:'laundry',customer:'portal:'+o.id,customerName:o.customer.name,orderId:o.id,createdBy:m.id,createdAt:new Date().toISOString(),status:'Diajukan',fixture:false};
+  for(const c of laundryCandidates(o)){const key='portal:'+o.id+':'+c.suffix;const existing=known.get(key);if(existing){if(c.kind==='refund'&&c.cashAccount&&!existing.cashAccount&&!['Tercatat','Direversal'].includes(existing.status)){existing.cashAccount=c.cashAccount;existing.holdReason='';existing.status='Diajukan';existing.sourceUpdatedAt=o.updatedAt;added++;}continue;}
+   const proof=c.proof?proofs.get(JSON.stringify([o.id,c.proof])):null;
    const t={...base,...c,id:'PORTAL-'+c.suffix+'-'+o.id,sourceKey:key,portalManaged:true,createdBy:c.sourceActor||m.id};delete t.proof;delete t.suffix;
    if(t.kind==='service'&&w.finance.policies?.approved===false)t.holdReason='Kebijakan pengakuan belum disetujui.';
-   if(t.holdReason)t.status='Tertahan';w.finance.transactions.push(t);
+   if(t.holdReason)t.status='Tertahan';w.finance.transactions.push(t);known.set(key,t);
    if(proof)w.finance.attachments.push({id:'PORTAL-PROOF-'+t.id,objectId:t.id,key:proof.object_key,name:'Bukti-'+o.id+'.'+(proof.mime==='application/pdf'?'pdf':proof.mime==='image/png'?'png':'jpg'),mime:proof.mime,size:0,hash:'',createdBy:proof.actor,createdAt:proof.created_at,version:1});added++;
   }
  }

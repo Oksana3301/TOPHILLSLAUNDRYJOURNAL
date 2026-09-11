@@ -17,8 +17,8 @@ export function projectDeskOrder(o,history=[]){
 }
 export async function laundryJournal(env,m){
  if(!['Owner','Finance','Operator'].includes(m.role))return {revision:null,orders:[]};
- const rows=(await env.DB.prepare("SELECT data,revision FROM laundry_orders WHERE COALESCE(json_extract(data,'$.simulation'),0)=0 ORDER BY created_at DESC,id DESC").all()).results;
- const histories=new Map();
- if(rows.length){const events=(await env.DB.prepare("SELECT e.order_id,e.at,e.action,e.data FROM laundry_events e JOIN laundry_orders o ON o.id=e.order_id WHERE COALESCE(json_extract(o.data,'$.simulation'),0)=0 ORDER BY e.at,e.id").all()).results;for(const e of events){const d=JSON.parse(e.data);if(!histories.has(e.order_id))histories.set(e.order_id,[]);histories.get(e.order_id).push({at:e.at,text:Labels.activity(e.action),by:d.actorName||'',reason:d.reason||''});}}
- return {revision:`${rows.length}:${rows.reduce((n,r)=>n+Number(r.revision),0)}`,orders:rows.map(r=>projectDeskOrder(JSON.parse(r.data),histories.get(JSON.parse(r.data).id)||[]))};
+ const [orders,events]=await env.DB.batch([env.DB.prepare("SELECT data,revision FROM laundry_orders WHERE COALESCE(json_extract(data,'$.simulation'),0)=0 ORDER BY created_at DESC,id DESC"),env.DB.prepare("SELECT e.order_id,e.at,e.action,e.data FROM laundry_events e JOIN laundry_orders o ON o.id=e.order_id WHERE COALESCE(json_extract(o.data,'$.simulation'),0)=0 ORDER BY e.at,e.id")]);
+ const rows=orders.results,histories=new Map();
+ for(const e of events.results){const d=JSON.parse(e.data);if(!histories.has(e.order_id))histories.set(e.order_id,[]);histories.get(e.order_id).push({at:e.at,text:Labels.activity(e.action),by:d.actorName||'',reason:d.reason||''});}
+ return {revision:`${rows.length}:${rows.reduce((n,r)=>n+Number(r.revision),0)}`,orders:rows.map(r=>{const o=JSON.parse(r.data);return projectDeskOrder(o,histories.get(o.id)||[])} )};
 }

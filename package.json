@@ -6,7 +6,7 @@
     "build": "node scripts/build-finance.mjs",
     "db:generate": "drizzle-kit generate",
     "test": "node --test tests/finance-tests.cjs tests/finance-api-tests.mjs tests/readiness-tests.cjs tests/services-tests.cjs && node tests/finance-ui-tests.cjs && node tests/core-tests.cjs && node tests/access-tests.cjs",
-    "test:laundry": "node --test tests/laundry-journal-tests.mjs tests/laundry-engine-tests.mjs tests/laundry-api-tests.mjs tests/laundry-v8-tests.mjs tests/laundry-packages-tests.mjs tests/laundry-demo-api-tests.mjs && node tests/laundry-demo-tests.cjs && node tests/laundry-copy-tests.cjs",
+    "test:laundry": "node --test tests/laundry-desk-ui-tests.mjs tests/upload-tests.cjs tests/laundry-journal-tests.mjs tests/laundry-engine-tests.mjs tests/laundry-api-tests.mjs tests/laundry-v8-tests.mjs tests/laundry-packages-tests.mjs tests/laundry-demo-api-tests.mjs && node tests/laundry-demo-tests.cjs && node tests/laundry-copy-tests.cjs",
     "test:auth": "node --test tests/staff-auth-tests.mjs tests/staff-auth-signup-tests.mjs",
     "test:supabase": "node --test tests/supabase-connection-tests.mjs tests/supabase-boundary-tests.mjs",
     "check:supabase": "node scripts/check-supabase.mjs",
