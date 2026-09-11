@@ -1,0 +1,200 @@
+MASTER PROMPT — SISTEM DESAIN JURNAL TERINSPIRASI NURIO
+
+STATUS REFERENSI
+Dokumen ini adalah rekonstruksi visual dan spesifikasi implementasi yang diusulkan, bukan design system resmi Nurio. Dasarnya adalah halaman App Store dan gambar produk publik di situs resmi Nurio. Kode HEX, font pengganti, ukuran, spacing, states, responsivitas, dan motion di bawah adalah keputusan implementasi baru; bukan token yang diekstrak dari source code aplikasi. Aset Nurio tidak disertakan. Buat aset orisinal atau gunakan aset berlisensi.
+
+=== MULAI MASTER PROMPT ===
+
+PERAN DAN TUJUAN
+Bertindak sebagai senior product designer, visual designer, dan design-system designer. Rancang identitas antarmuka dan sistem komponen untuk aplikasi di bawah. Gunakan bahasa visual jurnal kertas modern: latar kertas kotak-kotak yang sangat halus, tinta hitam, tulisan tangan yang terbaca, data sans-serif yang rapi, biru pastel, dan potongan foto objek nyata seperti stiker. Hasil harus terasa personal, tenang, ringan, dan menyenangkan tanpa terlihat kekanak-kanakan atau seperti dashboard korporat generik.
+
+KONTEKS PRODUK
+Nama produk: [NAMA PRODUK].
+Jenis aplikasi: [JURNAL MAKANAN / JURNAL LAUNDRY / JURNAL AKTIVITAS / LAINNYA].
+Pengguna utama: [TARGET PENGGUNA].
+Tindakan utama: [TINDAKAN YANG PALING SERING DILAKUKAN].
+Data yang dicatat: [JENIS CATATAN, SATUAN, STATUS, DAN METRIK].
+Navigasi utama: [MAKSIMAL EMPAT TUJUAN UTAMA].
+Bahasa antarmuka: Bahasa Indonesia.
+Platform awal: aplikasi mobile atau web app mobile-first.
+Output: sistem desain, pustaka komponen, aset pendukung, dan rancangan layar utama.
+
+Bila konteks belum diisi, gunakan contoh jurnal aktivitas harian dan beri label bahwa datanya adalah data demo. Jangan menciptakan fakta tentang bisnis pengguna. Adaptasikan fungsi terhadap konteks; jangan memasukkan kalori, pemindaian makanan, atau berat badan ke aplikasi non-kesehatan hanya karena referensinya Nurio.
+
+01. ARAH VISUAL WAJIB
+Bayangkan buku catatan kotak-kotak premium yang diberi tulisan pena dan tempelan foto objek nyata. Gabungkan kertas ivory, garis tinta tipis, bentuk sederhana, font tulisan tangan untuk judul pendek, sans-serif untuk isi dan data, aksen powder blue, dan foto cutout dengan warna alami.
+
+Ketidaksempurnaan harus terkendali. Kontur dekoratif boleh sedikit organik, tetapi alignment, jarak, area klik, tabel, dan baseline teks tetap teratur. Jangan memutar seluruh kartu atau baris data. Gunakan dekorasi terutama untuk orientasi, identitas kategori, ilustrasi kosong, dan visual utama; bukan untuk mengisi semua ruang kosong.
+
+Pisahkan dua lapisan. Lapisan aplikasi harus bersih dan mudah dipakai. Lapisan promosi boleh menggunakan kolase huruf kertas, gingham biru pucat, klip, struk, atau komposisi objek yang lebih ekspresif. Jangan mengubah setiap layar aplikasi menjadi poster promosi.
+
+02. TOKEN WARNA
+Gunakan token berikut sebagai palet implementasi, bukan sebagai klaim warna resmi Nurio:
+
+background-paper: #FFFDF7
+surface-primary: #FFFFFF
+surface-muted: #F7F5EE
+grid-line: #ECE9E1
+ink-primary: #171715
+text-secondary: #6D6F68
+border-subtle: #D8D8D0
+border-strong: #252522
+accent-blue: #B6D7F5
+accent-blue-soft: #EAF3FC
+accent-blue-deep: #355B88
+category-cyan: #AEE5F8
+category-green: #99D663
+category-yellow: #F5DF63
+
+Warna status tambahan untuk produk baru:
+success-foreground: #426847
+success-background: #EDF5E8
+warning-foreground: #8A5C14
+warning-background: #FFF2D2
+danger-foreground: #A43B32
+danger-background: #FCEBE7
+focus-ring: #355B88
+
+Gunakan kertas dan putih sebagai area terbesar. Tinta membangun hierarki. Biru pastel menandai tindakan utama. Cyan, hijau, dan kuning dipakai hemat untuk kategori. Sebagai arah komposisi, mulai dari sekitar 80% permukaan netral, 10% tinta, dan 10% aksen serta foto; ini panduan, bukan kuota piksel.
+
+Teks pada tombol biru pastel harus berwarna tinta gelap, bukan putih. Jangan memakai pastel sebagai warna teks kecil. Jangan menjadikan hijau sebagai identitas dominan. Warna objek fotografis boleh kaya dan natural, tidak wajib semuanya dijadikan pastel. Warna kategori tidak otomatis berarti sukses, peringatan, atau kesalahan.
+
+03. TIPOGRAFI
+Gunakan Patrick Hand Regular sebagai pilihan implementasi untuk judul pendek, tanggal, judul bagian, dan anotasi. Gunakan Inter untuk paragraf, nama item, label formulir, tombol, satuan, dan data. Ini adalah font pengganti untuk implementasi, bukan identifikasi font asli aplikasi. Bila Patrick Hand tidak tersedia, gunakan Handlee sebagai alternatif display; jangan memuat keduanya bersamaan tanpa kebutuhan.
+
+Skala awal pada ukuran mobile:
+Judul halaman: 30–32 px; line-height sekitar 1.2.
+Judul bagian: 22–24 px; line-height sekitar 1.25.
+Nama item: 16 px; Inter 600.
+Isi: 15–16 px; Inter 400; line-height sekitar 1.5.
+Label dan metadata: 13–14 px.
+Angka ringkasan: 30–36 px, dengan satuan lebih kecil.
+Tombol utama: 16 px, Inter 500 atau 600.
+
+Angka pada tabel, rekap, uang, dan satuan memakai sans-serif serta tabular numerals. Gunakan tulisan tangan hanya pada angka dekoratif atau ringkasan pendek yang tetap terbaca. Hindari font skrip bersambung, serif editorial dominan, huruf terlalu tipis, dan huruf dekoratif pada data padat. Jangan membuat bobot font sintetis pada keluarga font yang tidak menyediakannya.
+
+04. LATAR DAN TEKSTUR
+Buat latar ivory dengan grid kotak 16 × 16 px pada ukuran logis antarmuka. Gunakan garis sekitar 1 px yang sangat pucat. Grid adalah dekorasi latar, bukan garis pembatas formulir. Kurangi atau hilangkan grid di bawah konten padat.
+
+Tekstur kertas bersifat opsional dan sangat halus. Jangan menggunakan kertas tua kuning, noda kopi, tekstur grunge, serat besar, vignette cokelat, atau noise yang mengganggu tulisan. Komponen foreground boleh berupa kertas putih bersih dengan batas tinta tipis.
+
+05. LAYOUT DAN RESPONSIVITAS
+Mulai dari frame referensi 390 × 844 px. Uji layout pada lebar 360–430 px. Angka ini merupakan ukuran rancangan baru, bukan hasil pengukuran aplikasi asli.
+
+Gunakan margin horizontal 20 px, padding kartu 16 px, jarak antar-kartu 12–16 px, dan jarak antar-bagian 24–32 px. Gunakan skala spacing 4, 8, 12, 16, 20, 24, 32, 40, dan 48 px. Tinggi kartu mengikuti isi, bukan dipaksa sama bila menyebabkan pemotongan.
+
+Susunan beranda: header tanggal dan utility actions; pemilih hari mingguan; ringkasan metrik; daftar kartu catatan; area input cepat; navigasi bawah. Pertahankan hierarki ini sambil menyesuaikan kebutuhan produk.
+
+Sediakan ruang bawah yang cukup untuk input cepat, navigasi, dan safe area. Jangan menutup kartu terakhir, tombol simpan, atau field aktif dengan elemen fixed. Ketika keyboard terbuka, pastikan field dan tindakan utama tetap dapat dicapai.
+
+Untuk tablet atau desktop, usulkan adaptasi dua kolom bila berguna, dengan lebar konten dibatasi agar tidak terlalu renggang. Jangan mengklaim bahwa layout desktop tersebut berasal dari Nurio. Jangan menempatkan bingkai iPhone atau Dynamic Island sebagai bagian dari UI aplikasi yang dapat digunakan; bingkai perangkat hanya untuk materi presentasi.
+
+06. BENTUK, GARIS, DAN KEDALAMAN
+Kartu menggunakan radius sekitar 12–16 px dan border tinta sekitar 1–1.5 px. Tombol utama setinggi 52 px dengan radius pil. Tombol ikon memiliki glyph sekitar 22–24 px dan target sentuh sekurangnya 44 × 44 px. Tombol tambah boleh berbentuk kotak membulat; ukuran visual dan hit area boleh berbeda.
+
+Gunakan ujung garis bulat. Bila membuat border organik, gunakan path SVG yang sedikit tidak sempurna tetapi tetap halus. Jangan membuat setiap garis bergetar atau menggandakan semua outline.
+
+Kedalaman utamanya berasal dari layer, batas, dan foto objek. Bayangan UI harus hampir tidak terasa. Hindari hard shadow hitam, border 4 px, kartu 3D menggembung, atau gaya neobrutalism. Foto objek boleh memiliki pencahayaan dan bayangan material yang natural.
+
+07. PUSTAKA KOMPONEN
+Bangun komponen dengan nama konsisten: PaperBackground, JournalHeader, WeekStrip, MetricRing, CategoryProgress, JournalCard, ObjectSticker, AddItemButton, QuickEntryBar, BottomNavigation, ReviewList, ReceiptSummary, Dialog, dan EmptyState. ReceiptSummary bersifat opsional dan merupakan adaptasi motif promosi, bukan fitur yang harus ada.
+
+JournalHeader: tanggal bergaya tulisan tangan di kiri; utility actions tipis di kanan. Batasi tindakan yang ditampilkan dan beri nama aksesibel pada setiap ikon.
+
+WeekStrip: tujuh hari, jarak merata, hari aktif dibatasi kotak membulat beroutline tinta. Target sentuh tidak boleh terlalu kecil. Hari aktif tidak hanya dibedakan melalui warna.
+
+MetricRing: angka ringkasan di tengah, satuan sekunder, track abu-abu pucat, progress tinta hitam dengan rounded caps. Gunakan ukuran awal sekitar 104–112 px dan stroke sekitar 7–9 px. Jangan membuat cincin multigradien. Isi ring harus diturunkan dari data yang konsisten.
+
+CategoryProgress: label, simbol bentuk, nilai aktual dan target, serta progress horizontal. Gunakan kombinasi cyan + lingkaran, hijau + persegi, dan kuning + segitiga bila relevan. Untuk produk lain, ubah makna kategorinya. Pertahankan label dan angka; jangan menyampaikan data hanya melalui warna pastel. Tambahkan kontur gelap bila dibutuhkan untuk kontras informasi grafis.
+
+JournalCard: judul bagian di kiri, ringkasan angka di kanan, metadata di bawah, divider tipis, deretan stiker objek, lalu tombol tambah. Semua teks tetap horizontal dan terbaca. Foto jangan menghalangi judul, nilai, atau area interaksi.
+
+QuickEntryBar: permukaan putih berbentuk pil dengan outline tinta; placeholder singkat; tindakan kirim atau tambah. Input suara boleh menjadi tindakan terpisah jika benar-benar relevan. Jangan menambahkan fitur AI atau mikrofon yang tidak bekerja tanpa penjelasan.
+
+BottomNavigation: maksimal empat destinasi utama, ikon garis ringan, label terbaca, wadah rounded warna off-white, dan dukungan safe area. Bedakan aktif melalui tinta lebih gelap dan indikator bentuk bila dibutuhkan, bukan hanya warna. Jangan membuat dock terlalu tinggi atau memenuhi sepertiga layar.
+
+ReviewList: thumbnail objek, nama item, rincian, angka, kontrol edit, dan satu tombol konfirmasi utama. Kumpulan objek dapat divisualkan dalam keranjang bila metafornya cocok. Tampilkan hasil estimasi sebagai sesuatu yang dapat diperiksa dan diedit sebelum disimpan.
+
+Untuk setiap komponen interaktif, dokumentasikan default, pressed, selected, focus, disabled, loading, dan error sesuai relevansi. Untuk komponen konten, dokumentasikan empty, populated, dan long-content. Jangan menciptakan state yang tidak bermakna hanya untuk melengkapi daftar.
+
+08. SISTEM ASET
+Pisahkan aset menjadi foto objek, objek hero, ikon utilitas, dekorasi kertas, dan komposisi promosi. Jangan menggunakan satu gaya ilustrasi untuk semuanya.
+
+Foto objek: potongan fotografis realistis, latar transparan, tepi alpha bersih, detail material tajam, pencahayaan natural yang konsisten, dan warna alami. Untuk tema makanan, objek dapat berupa telur, alpukat, roti, tomat, pisang, atau hidangan dalam mangkuk. Untuk tema laundry, gunakan pakaian terlipat, handuk, hanger, tas laundry, atau keranjang pakaian. Buat aset baru; jangan memakai komposit promosi sebagai kumpulan aset terpisah yang seolah sudah tersedia.
+
+Aset hero: satu objek nyata yang relevan dengan produk. Pada referensi makanan, karakter visualnya adalah keranjang kawat krom/perak dengan pegangan biru pastel, terlihat dari atas atau sudut atas ringan. Jangan mengubahnya menjadi keranjang rotan, shopping cart, atau ikon plastik kartun. Dalam produk berbeda, pilih objek yang benar-benar memiliki fungsi atau makna.
+
+Ikon utilitas: SVG monoline, stroke sekitar 1.5 px pada grid 24 px, ujung membulat, sedikit karakter tangan yang tetap konsisten. Siapkan home, kalender, waktu, pengaturan, tambah, kembali, kamera, mikrofon, konfirmasi, edit, dan hapus sesuai kebutuhan. Hindari emoji sistem sebagai pengganti ikon final.
+
+Dekorasi: panah sketsa, garis bawah, potongan kertas, klip kecil, atau struk sebagai aksen. Gunakan maksimal satu dekorasi dominan per area. Jangan menambahkan mata, wajah, atau karakter lucu pada semua objek.
+
+Spesifikasi file: ikon dalam SVG; stiker dalam PNG atau WebP transparan; foto utuh dalam format raster yang sesuai; teks tetap sebagai teks yang dapat diedit. Siapkan stiker kecil sekitar 512 × 512 px, aset detail sekitar 1024 px, dan hero sekitar 1600 px bila diperlukan. Kompres sesuai ukuran tampil dan kualitas aktual, jangan memaksakan semua file ke resolusi maksimum.
+
+Gunakan nama semantik seperti object-toast-01.webp, object-towel-01.webp, hero-basket-empty.webp, icon-add.svg. Pisahkan objek satu per file; komposisi hero gabungan disimpan terpisah. Sediakan versi keranjang kosong dan penuh hanya bila keduanya dipakai. Dekorasi tidak boleh membebani pembaca layar; objek informatif perlu nama yang jelas.
+
+09. LAPISAN PROMOSI OPSIONAL
+Bila membuat poster, onboarding ilustratif, atau materi pemasaran, gunakan kolase kertas dengan aksen biru denim/powder blue, kain gingham biru-putih pucat, objek cutout, dan struk kecil. Potongan huruf boleh sedikit dimiringkan; gunakan nama brand produk baru, bukan logo Nurio.
+
+Struk boleh menampilkan item, ringkasan angka, garis putus-putus, dan elemen barcode dekoratif yang tidak menyerupai kode pembayaran aktif. Untuk ringkasan transaksi sungguhan, semua angka dan kode harus berasal dari data valid, bukan dekorasi generatif. Teks panjang tidak boleh dirasterisasi hanya demi efek kertas.
+
+Efek transparan seperti kaca hanya opsional pada overlay kamera, dengan lapisan latar yang menjaga kontras. Jangan menjadikan glassmorphism sebagai gaya seluruh aplikasi.
+
+10. LAYAR YANG DIRANCANG
+Buat enam layar yang saling terhubung: beranda jurnal; tambah catatan; tinjau dan konfirmasi; riwayat beserta detail; ringkasan periode; dan pengaturan. Tambahkan layar pemindaian hanya jika fungsi produk membutuhkannya. Ini adalah cakupan produk baru, bukan daftar layar Nurio yang telah diverifikasi.
+
+Pada beranda, tampilkan tanggal, ringkasan, kartu, dan input cepat. Pada tambah catatan, tampilkan field dan input relevan tanpa dekorasi berlebihan. Pada tinjau, pastikan semua data dapat diperiksa sebelum konfirmasi. Pada riwayat, sediakan cara menemukan tanggal dan membuka rincian. Pada ringkasan, utamakan informasi yang dapat dipahami, bukan sebanyak mungkin chart. Pada pengaturan, gunakan daftar bersih dan kontrol yang konsisten.
+
+Jangan membuat semua layar memakai susunan kartu identik. Gunakan pola yang sesuai dengan pekerjaan pengguna. Sediakan contoh kosong, isi normal, judul panjang, banyak item, kegagalan simpan, dan loading pada layar yang relevan.
+
+11. INTERAKSI DAN MOTION YANG DIUSULKAN
+Motion adalah rancangan baru karena gambar statis tidak membuktikan animasi aplikasi asli. Gunakan transisi kecil sekitar 160–220 ms untuk feedback kontrol dan 240–320 ms untuk panel. Stiker boleh masuk melalui fade atau scale 0.98 ke 1, tanpa pantulan berlebihan.
+
+Sediakan pengurangan animasi. Jangan menggerakkan tekstur kertas terus-menerus. Jangan memberi confetti untuk setiap pencatatan. Jika ada drag-and-drop atau swipe, sediakan alternatif melalui tombol atau menu. Jangan mengharuskan pengguna mengetahui gesture tersembunyi.
+
+12. AKSESIBILITAS DAN BAHASA
+Targetkan kontras teks biasa sekurangnya 4.5:1; teks besar dan informasi grafis penting sekurangnya 3:1 sesuai konteks. Pastel dapat menjadi isi dekoratif, tetapi label dan batas yang membawa informasi harus terbaca. Pilihan warna saja tidak cukup untuk membuktikan kepatuhan; periksa pasangan warna, state, background, dan ukuran nyata.
+
+Gunakan target sentuh sekurangnya 44 × 44 px sebagai target kenyamanan desain. Beri focus ring jelas. Dukung pembesaran teks, pembaca layar, navigasi keyboard bila platform mendukung, dan konten panjang. Kurangi grid di area yang mengganggu pembacaan.
+
+Gunakan kalimat Indonesia yang ringan dan langsung, misalnya “Tambah catatan”, “Periksa dulu”, “Simpan ke hari ini”, “Belum ada catatan”, dan “Coba lagi”. Jangan menghakimi pengguna, memberi pujian berlebihan, atau mengarang hasil analisis. Untuk hasil AI, bedakan estimasi, input pengguna, dan data yang sudah dikonfirmasi.
+
+13. OUTPUT DAN SERAH TERIMA
+Sajikan fondasi visual, primitive tokens, semantic tokens, skala tipografi, spacing, radius, border, komponen beserta variants, inventaris aset, dan enam layar yang terhubung. Jelaskan state penting serta perilaku responsif.
+
+Untuk Figma, gunakan variables, Auto Layout, component instances, dan penamaan konsisten. Teks dan ikon harus dapat diedit, bukan satu gambar datar. Tampilkan frame UI bersih terpisah dari mockup perangkat.
+
+Untuk implementasi kode, gunakan komponen reusable dan CSS variables yang setara dengan token. Jangan menghasilkan tombol palsu atau data seolah terhubung ke backend padahal masih demo. Berikan fallback yang jelas untuk aset yang belum ada. Jangan hotlink aset brand referensi sebagai aset produksi.
+
+Jika diminta ekspor PNG, hasilkan layar pada skala yang jelas dan periksa keterbacaan pada ukuran tampil nyata. Jika hanya diminta desain, jangan mengklaim telah membangun aplikasi atau integrasi yang belum dibuat.
+
+14. HAL YANG DILARANG
+Hindari dashboard SaaS generik, identitas hijau dominan, gradient ungu-biru sebagai warna utama, kartu gelap futuristis, border neobrutal tebal, shadow hitam keras, karakter clay 3D, emoji pengganti aset, dekorasi yang menutup data, tampilan sangat bayi, serif editorial besar sebagai ciri utama, grid terlalu kontras, tulisan tangan untuk seluruh data, dan kolase pada setiap layar.
+
+Jangan mengklaim menggunakan font asli, kode warna resmi, aset sumber asli, atau motion Nurio tanpa bukti. Jangan menyalin nama atau logo Nurio sebagai identitas produk baru. Jangan mengubah fitur bisnis hanya demi kemiripan visual.
+
+15. KRITERIA PENERIMAAN
+Desain diterima jika terasa seperti jurnal kertas modern; memiliki grid halus, tinta tipis, kombinasi handwritten dan sans-serif, aksen powder blue, serta objek fotografis; tetap mempunyai hierarki jelas, data konsisten, interaksi dapat ditemukan, aset satu keluarga visual, state lengkap, dan layout yang tidak terpotong. Lakukan pemeriksaan di lebar 360, 390, dan 430 px serta pada teks yang diperbesar. Jelaskan bagian yang masih berupa asumsi atau demo.
+
+=== AKHIR MASTER PROMPT ===
+
+PROMPT TAMBAHAN — STIKER OBJEK
+Buat satu aset fotografis orisinal berupa [OBJEK] untuk aplikasi jurnal kertas modern. Satu objek terisolasi, latar transparan, bentuk realistis, detail material jelas, pencahayaan lembut dari kiri atas, sudut top-down atau sudut atas ringan sesuai keluarga aset, warna alami, dan tepian alpha bersih. Tanpa teks, logo, watermark, tangan, meja, bingkai, wajah kartun, atau white stroke tebal. Gunakan padding transparan sekitar 10–15%. Hasil harus tetap mudah dikenali saat ditampilkan kecil. Keluaran PNG transparan sekitar 1024 × 1024 px. Jika alat tidak mendukung transparansi, nyatakan keterbatasannya, jangan menggambar pola checkerboard sebagai pengganti alpha.
+
+PROMPT TAMBAHAN — IKON UTILITAS
+Rancang ikon orisinal [NAMA IKON] untuk antarmuka jurnal kertas. Gunakan grid 24 × 24, stroke tinta #171715 sekitar 1.5, round cap dan round join, bentuk sederhana, bobot optis konsisten, dan karakter gambar tangan yang sangat terkendali. Tidak ada fill warna-warni, shadow, tekstur, perspektif 3D, emoji, atau detail kecil yang hilang pada ukuran 24 px. Jika alat mendukung vektor, keluarkan SVG yang dapat diedit; jangan mengklaim raster sebagai SVG vektor asli.
+
+REFERENSI PUBLIK YANG DITINJAU
+https://apps.apple.com/id/app/nurio-food-fitness-journal/id6760155328?l=id
+https://nuriostudio.com/
+https://nuriostudio.com/assets/home-phone.png
+https://nuriostudio.com/assets/import-phone.png
+https://nuriostudio.com/assets/scan-phone.png
+https://nuriostudio.com/assets/full-bucket.png
+https://nuriostudio.com/assets/brand-basket.png
+https://fonts.google.com/specimen/Patrick+Hand
+https://fonts.google.com/specimen/Handlee
+https://fonts.google.com/specimen/Inter
+https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
+
+Catatan: nama file yang ditemukan adalah aset gambar publik untuk referensi, bukan bukti bahwa file individual/layer sumber tersedia. Tampilan fotorealistis tidak membuktikan apakah objek dibuat melalui fotografi atau render 3D. Versi aplikasi yang berjalan, source code, font asli, token asli, state interaktif, dan animasi tidak diverifikasi langsung.

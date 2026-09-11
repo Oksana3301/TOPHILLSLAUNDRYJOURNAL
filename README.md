@@ -27,6 +27,10 @@ Website saat ini: [Top Hills & Co](https://top-hills-co-journal.atikadewi.chatgp
 
 `dist/` tidak boleh dihapus saat membersihkan build: folder ini memuat frontend sumber. Hanya `dist/server/`, `dist/.openai/` dan `.sites-runtime/` yang merupakan output/cache build yang diabaikan Git.
 
+## Update melalui ChatGPT dan GitHub
+
+Repository utama: [Oksana3301/TOPHILLSLAUNDRYJOURNAL](https://github.com/Oksana3301/TOPHILLSLAUNDRYJOURNAL), branch `main`. Setiap permintaan perubahan pada proyek ini mengikuti alur **fetch → pull → update dan periksa → commit → push → verifikasi**. Baca [panduan sinkronisasi](docs/GIT-WORKFLOW.md) dan [aturan kerja asisten](AGENTS.md). Alur ini dijalankan saat proyek dikerjakan; push GitHub tidak menerbitkan website atau memigrasikan database.
+
 ## Menjalankan pemeriksaan lokal
 
 Runtime pengujian paket ini: Node.js 24.19.0. Tes memakai `node:sqlite`. Dari root repository:
