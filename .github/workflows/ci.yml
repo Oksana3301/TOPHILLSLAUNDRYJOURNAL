@@ -1,0 +1,58 @@
+name: Top Hills CI
+
+on:
+  push:
+  pull_request:
+
+# Tests use in-memory databases and mocked services.
+# No production secrets, deployment environments, or write permissions.
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and all tests (Node.js 24)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build application
+        id: build
+        run: npm run build
+
+      # Run every test group after a successful build, even if another group fails.
+      # Failed test steps still cause the overall job to fail.
+      - name: Test finance, services, UI, core, and access
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm test
+
+      - name: Test laundry API, engine, and demo
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run test:laundry
+
+      - name: Test staff authentication
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run test:auth
+
+      - name: Test cache behavior
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: node --test tests/cache-tests.mjs
