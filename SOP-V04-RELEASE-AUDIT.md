@@ -1,6 +1,6 @@
 # Top Hills · SOP v0.4 release audit
 
-11 September 2026. Latest supplied SOP: SOP_Operasional_Laundry_Top_Hills_v0.4_Draft (3)(1).docx.
+11 September 2026. Latest supplied SOP: SOP_Operasional_Laundry_Top_Hills_v0.4_Draft (3)(2).docx.
 
 ## Acceptance coverage
 
@@ -46,3 +46,12 @@ Current Site audience is public; operational APIs still require active staff mem
 
 ## Verification
 Node engine/API tests exercise local SQLite and mock object storage/provider; 20 interactive engine scenarios execute with a DOM stub. Browser/mobile visual, camera, real email/Supabase, QRIS and WhatsApp integration QA remain unperformed. /sop-coverage exposes this same boundary to users.
+
+## Panduan per order dan jurnal (11 September 2026)
+- Seluruh 28 kondisi mempunyai panduan Operator/Owner, bukti yang diperiksa dan kondisi penyelesaian. Checkbox alur diturunkan dari fakta sumber; catatan pemeriksaan peran terpisah dan menjadi usang jika kondisi bisnis berubah.
+- Meja laundry dan jurnal depan memakai order sumber yang sama. INT tertaut tetap menjadi arsip, tidak menambah omzet atau order aktif kedua.
+- Receipt, layanan selesai, setoran, biaya dan refund menghasilkan usulan pembukuan unik. Posting memerlukan bukti, kebijakan dan pemeriksaan; tidak ada pendapatan atau cash baru hanya karena order dibuat.
+- Setoran cash bertahap menyimpan total kumulatif; pembukuan menggunakan selisih. Satu mutasi bank bersih dapat dicocokkan dengan pasangan setoran dan biaya.
+- Refund bank/kas kecil tidak mengurangi cash penerimaan yang belum disetor. Rekening refund lama yang belum lengkap dapat dilengkapi dengan bukti; transaksi yang telah dibukukan tidak ditimpa.
+- Cakupan sebagian/belum aktif di atas tetap berlaku. Panduan bukan pengaktifan provider QRIS/WhatsApp, pemotongan atau penolakan refund otomatis, atau pembuktian uji ponsel/kamera nyata.
+- Runtime Supabase/Auth sudah aktif; pernyataan adapter belum dikonfigurasi pada catatan rilis awal di atas bersifat historis. Ruang latihan ditutup pada runtime ini.

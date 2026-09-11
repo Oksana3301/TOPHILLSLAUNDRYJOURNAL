@@ -46,5 +46,29 @@
     "repository_path": "docs/design/Design-Reference-06.txt",
     "sha256": "3c9b8944a1a2732d9fe9ec637a8098ed67f5502b949397eb9460a8bb38fc8a60",
     "size_bytes": 18597
+  },
+  {
+    "original_filename": "SOP_Operasional_Laundry_Top_Hills_v0.1.docx",
+    "repository_path": "docs/sop/SOP-Top-Hills-v0.1.docx",
+    "sha256": "6fbe74546de9c888693053daed42dbe79322e52f6c7ff46c9ffe849e8bb07bbd",
+    "size_bytes": 68344
+  },
+  {
+    "original_filename": "SOP_Operasional_Laundry_Top_Hills_v0.3(1).docx",
+    "repository_path": "docs/sop/SOP-Top-Hills-v0.3.docx",
+    "sha256": "ac07e9642d4540ae1d0041505039b11d063ddce5a808fb78de725596b5dd06bf",
+    "size_bytes": 124107
+  },
+  {
+    "original_filename": "SOP_Operasional_Laundry_Top_Hills_v0.4_Draft (3)(2).docx",
+    "repository_path": "docs/sop/SOP-Top-Hills-v0.4-latest.docx",
+    "sha256": "2ddd092919e70330f0014508e0e66f31b7367d7fbfcf40b12a106286119ac1c7",
+    "size_bytes": 389019
+  },
+  {
+    "original_filename": "Master_Prompt_Nurio_Inspired_ID(2).txt",
+    "repository_path": "docs/design/Master-Prompt-Nurio-Inspired-ID.txt",
+    "sha256": "c6ee50221bfa194b80d7f4da746ab66d94f764c7481cefbc13c0217e9b1f2dae",
+    "size_bytes": 20466
   }
 ]

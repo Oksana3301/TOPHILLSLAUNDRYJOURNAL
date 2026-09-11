@@ -40,7 +40,7 @@ function valid(p){return !!p&&typeof p.name==='string'&&p.name.trim().length>0&&
 function weighted(p){return ['KG','Load'].includes(p.unit||'KG');}
 function quote(service,weight=0,quantity=0){const p=normalize(service);if(!valid(p))throw Error('Layanan tidak valid.');const n=Number(weighted(p)?weight:quantity);if(!Number.isFinite(n)||n<0||n>1000||(!weighted(p)&&!Number.isInteger(n)))throw Error(weighted(p)?'Berat tidak valid.':'Jumlah barang harus bilangan bulat.');const billed=p.unit==='Load'?Math.ceil(Math.round(n*1000)/1000/p.loadKg):n;return {quantity:billed,billedQuantity:billed,total:Math.round(billed*p.price),minimumMet:n===0||billed>=p.minQuantity,unit:p.unit};}
 function snapshot(o){return normalize(o.serviceSnapshot||{name:o.package,price:o.rate,hours:48,unit:'KG'});}
-function quantityText(o){const p=snapshot(o),n=o.billedQuantity??o.weight??0;return p.unit==='Load'?`${n} load (${o.weight||0} kg)`:`${n} ${p.unit}`;}
+function quantityText(o){if(o?.quantityLabel)return o.quantityLabel;const p=snapshot(o),n=o.billedQuantity??o.weight??0;return p.unit==='Load'?`${n} load (${o.weight||0} kg)`:`${n} ${p.unit}`;}
 function location(t){return [t.building?'Gedung '+t.building:'',t.floor?'Lantai '+t.floor:'',t.room?'Kamar '+t.room:''].filter(Boolean).join(' · ');}
 function duration(p){return p.hours%24===0?p.hours/24+' hari':p.hours+' jam';}
 function rule(p){return p.unit==='Load'?`1 load maksimal ${p.loadKg} kg; kelebihan dihitung load berikutnya.`:p.minQuantity?`Minimal ${p.minQuantity} ${p.unit} per order.`:'Tanpa minimal order.';}

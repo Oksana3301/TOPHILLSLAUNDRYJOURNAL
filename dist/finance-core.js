@@ -110,6 +110,17 @@ function candidates(ops,s,actorId){const list=[],has=k=>s.transactions.some(t=>t
  for(const st of ops.settlements||[])if(st.status==='Terverifikasi Owner'&&st.depositAt){for(const [unit,value] of Object.entries(st.unitAmounts||{laundry:st.deposit}))build('settlement:'+st.id+':transfer:'+unit,{kind:'transfer',sourceType:'settlement',date:dateOf(st.depositAt,s.policies.timezone),unit,description:'Setoran internal '+st.id+' · '+unit,amount:value,cashAccount:'1101',toAccount:'1102',reference:st.bankReference,status:st.difference?'Tertahan':'Diajukan',holdReason:st.difference?'Selisih closing perlu jurnal koreksi dan rekonsiliasi.':''});}
  return list;
 }
+function bankMatchCandidates(s,row){
+ const matched=id=>s.bankRows.some(r=>r.matchedId===id||r.matchedIds?.includes(id));
+ const net=t=>s.journals.find(j=>j.transactionId===t.id)?.lines.filter(l=>l.account===row.account).reduce((n,l)=>n+l.debit-l.credit,0)||0;
+ const posted=s.transactions.filter(t=>t.status==='Tercatat'&&!matched(t.id));
+ const out=posted.filter(t=>net(t)===row.amount).map(t=>({id:t.id,transactionIds:[t.id],label:t.date+' · '+t.description}));
+ for(const t of posted.filter(t=>t.portalManaged&&t.kind==='transfer'&&/:settlement(?:-\d+)?$/.test(t.sourceKey))){const key=t.sourceKey.replace(':settlement',':settlement-fee'),fee=posted.find(x=>x.sourceKey===key&&x.kind==='expense');if(row.account==='1102'&&fee&&net(t)!==0&&net(fee)!==0&&net(t)+net(fee)===row.amount)out.push({id:'group:'+t.id,transactionIds:[t.id,fee.id],label:t.date+' · '+t.description+' + biaya (bersih)'});}
+ return out;
+}
+function matchBankRow(s,row,choice,actor,at){
+ ensure(row&&!row.matchedId,'Mutasi sudah dicocokkan atau tidak ditemukan.');const c=bankMatchCandidates(s,row).find(c=>c.id===choice);ensure(c,'Pilih transaksi dengan rekening dan nominal bersih yang cocok, belum dicocokkan.');ensure(c.transactionIds.every(id=>s.transactions.find(t=>t.id===id).createdBy!==actor),'Rekonsiliasi memerlukan pemeriksa berbeda dari pencatat.');row.matchedId=c.transactionIds[0];row.matchedIds=c.transactionIds;row.matchedBy=actor;row.matchedAt=at;return row;
+}
 function seedFinance(){
  const s={transactions:[],journals:[],attachments:[],bankRows:[],periods:[],snapshots:[],budgets:[],insights:[],policies:clone(defaultPolicies)};
  s.policies.approved=true;s.policies.openingApproved=true;s.policies.approvedBy='Contoh fiktif';s.policies.fixture=true;
@@ -134,5 +145,5 @@ function seedFinance(){
  return s;
 }
 function attachFixtureOrders(ops){if(ops.orders.some(o=>o.id==='LDR-F001'))return ops;const common={type:'Umum',room:'Counter',mode:'Antar langsung',bags:1,package:'Cuci + setrika',rate:8000,pic:ops.employees[0]?.id,checkout:'',returnMode:'Ambil sendiri',note:'Contoh dari requirement tiga laporan. Seluruh data fiktif.',evidence:{chat:true,label:true,weigh:true,receipt:true,qc:true,packed:true,readyMessage:true,handover:true,customerAck:true},history:[],stage:'Selesai',fixture:true};ops.orders.unshift({...clone(common),id:'LDR-F001',tenantId:'',customerId:'demo-customer-1',customer:'Rani Contoh',weight:25,total:200000,created:'2026-09-10T08:00:00+07:00',completed:'2026-09-10T12:00:00+07:00',due:'2026-09-10T12:00:00+07:00',payment:'Lunas Terverifikasi',method:'Transfer',paidAt:'2026-09-11T09:00:00+07:00',financeFixture:true},{...clone(common),id:'LDR-F002',tenantId:'',customerId:'demo-customer-2',customer:'Dina Contoh',weight:18.75,total:150000,created:'2026-09-10T09:00:00+07:00',completed:'2026-09-11T12:00:00+07:00',due:'2026-09-11T12:00:00+07:00',payment:'Lunas Terverifikasi',method:'Transfer',paidAt:'2026-09-10T09:00:00+07:00',financeFixture:true});return ops;}
-const api={accounts,accountMap,kinds,defaultPolicies,clone,dateValid,day,dateOf,today,amount,ensure,selected,accountBalance,outstanding,validateTransaction,makeJournal,post,report,series,periodsBetween,alerts,candidates,seedFinance,attachFixtureOrders};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.THFinanceCore=api;
+const api={bankMatchCandidates,matchBankRow,accounts,accountMap,kinds,defaultPolicies,clone,dateValid,day,dateOf,today,amount,ensure,selected,accountBalance,outstanding,validateTransaction,makeJournal,post,report,series,periodsBetween,alerts,candidates,seedFinance,attachFixtureOrders};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.THFinanceCore=api;
 })(typeof window!=='undefined'?window:globalThis);

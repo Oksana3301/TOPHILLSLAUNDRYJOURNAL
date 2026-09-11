@@ -2,7 +2,7 @@
 
 Source website Top Hills: dashboard laundry/hunian, laporan keuangan, portal QR kamar, dan akun staf. Paket awal berasal dari source versi website 8 (`edcc95b926546225f03323c44b65d6af7a5ae0cf`) beserta dokumen unggahan pengguna. Ruang latihan sudah ditutup pada runtime Supabase.
 
-**Website versi 11 sudah memakai PostgreSQL/Storage Supabase. Pemindahan seluruh 18 tabel sudah terverifikasi. Hasil pemeriksaan dan percobaan akun nyata yang masih diperlukan dicatat dalam [handoff migrasi](docs/supabase/MIGRATION-HANDOFF.md).**
+**Website sudah memakai PostgreSQL/Storage Supabase. Pemindahan seluruh 18 tabel sudah terverifikasi. Hasil pemeriksaan dan percobaan akun nyata yang masih diperlukan dicatat dalam [handoff migrasi](docs/supabase/MIGRATION-HANDOFF.md).**
 
 Website saat ini: [Top Hills & Co](https://top-hills-co-journal.atikadewi.chatgpt.site).
 
@@ -55,7 +55,7 @@ Build menghasilkan Worker ESM di `dist/server/index.js`. Runtime aktif memilih `
 ## Halaman aplikasi
 
 - `/`: dashboard, hunian, collection, jurnal dan tiga laporan keuangan.
-- `/laundry-desk`: antrean petugas, Assisted Check-in, bukti, INT/THL, settlement dan review shift.
+- `/laundry-desk`: antrean petugas, checklist berurutan per order, panduan 28 skenario, catatan pemeriksaan peran, bukti, INT/THL, settlement dan review shift. Order tampil otomatis pada jurnal dan seluruh order.
 - `/checkin`: portal pelanggan dari QR kamar, atau tautan pelacakan order pribadi.
 - `/login`: login/daftar staf melalui Supabase Auth atau identitas ChatGPT yang sudah ada. Pengiriman kode email dan login akun nyata masih perlu diperiksa.
 - `/demo` dan `/sop-demo.html`: ditutup pada runtime Supabase; fixture lokal tetap tersedia untuk pengujian.
@@ -77,10 +77,12 @@ Saat berpindah host, jangan mempercayai header `oai-authenticated-user-*` dari i
 
 ## Status pengujian dan kesiapan
 
-Source runtime Supabase lolos seluruh suite Node.js 24, termasuk 71 skenario API terhadap PostgreSQL lokal dan 15 pemeriksaan koneksi/batas backend. Penyimpanan privat dan API runtime sudah diperiksa. Belum dilakukan pengujian ponsel/kamera nyata, email Supabase nyata, QRIS atau WhatsApp provider. Audit SOP awal: 18 skenario inti tersedia, 8 sebagian, 2 integrasi belum aktif. Ini belum pernyataan siap operasional penuh.
+Source runtime Supabase lolos seluruh suite Node.js 24, termasuk 95 skenario terhadap PostgreSQL lokal dan 15 pemeriksaan koneksi/batas backend. Penyimpanan privat dan API runtime sudah diperiksa. Belum dilakukan pengujian ponsel/kamera nyata, email Supabase nyata, QRIS atau WhatsApp provider. Audit SOP awal: 18 skenario inti tersedia, 8 sebagian, 2 integrasi belum aktif. Ini belum pernyataan siap operasional penuh.
 
 Migrasi mempertahankan data, ID akun, revisi dan histori. Backup penuh disimpan secara privat; repo publik tidak menyimpan data usaha. Sumber D1/R2 tidak dihapus. Setelah ada penulisan baru di Supabase, pemulihan harus merekonsiliasi perubahan tersebut.
 
 ## Pembaruan meja laundry
 
 Lihat [paket ganda, koreksi timbangan, dan pengecualian proses](docs/LAUNDRY-PACKAGES.md) untuk alur operator dan pelanggan. Status migrasi Supabase tetap dicatat terpisah pada handoff database.
+
+Panduan baru: [Checklist order dan sinkronisasi jurnal](docs/LAUNDRY-GUIDE-JOURNAL.md).

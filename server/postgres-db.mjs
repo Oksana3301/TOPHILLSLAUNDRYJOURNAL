@@ -1,7 +1,7 @@
 // Server-only compatibility for the application's parameterized SQLite queries.
 // No route accepts SQL from a caller. Each D1-style batch is one PG transaction.
 const booleanPaths = new Set(['simulation', 'custody']);
-const numberPaths = new Set(['bags', 'received', 'ref.settlementAdjustment.cashReturned']);
+const numberPaths = new Set(['bags', 'received', 'pay.received', 'ref.settlementAdjustment.cashReturned']);
 const cache = new Map();
 function jsonPath(path) {
   if (!/^\$\.[A-Za-z0-9_.]+$/.test(path)) throw new Error('Unsupported JSON path');

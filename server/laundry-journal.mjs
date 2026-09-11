@@ -1,0 +1,24 @@
+import Labels from '../dist/laundry-labels.js';
+import F from '../dist/finance-core.js';
+import {clearState,alerts} from './laundry-engine.mjs';
+import {laundryCandidates} from './laundry-finance.mjs';
+const stages={SUBMITTED:'Pesanan Masuk','AWAITING PICKUP':'Menunggu Dijemput','AWAITING DROPOFF':'Pesanan Masuk','PICKED UP':'Sudah Dijemput','RECEIVED AT COUNTER':'Diterima Laundry','PRICE CONFIRMATION PENDING':'Diterima Laundry','IN PROCESS':'Diproses','READY FOR HANDOVER':'Siap Diserahkan',COMPLETED:'Selesai',CANCELLED:'Dibatalkan',VOIDED:'Dibatalkan',LINKED:'Dibatalkan',QUARANTINE:'Tertahan','ON HOLD':'Tertahan','CANCEL REQUESTED':'Tertahan','RETURN REQUESTED':'Tertahan'};
+export async function laundryRevision(env){const r=await env.DB.prepare("SELECT count(*) AS n,COALESCE(sum(revision),0) AS revisions FROM laundry_orders WHERE COALESCE(json_extract(data,'$.simulation'),0)=0").first();return `${r.n}:${r.revisions}`;}
+export function accountingState(o,transactions=[]){
+ const expected=laundryCandidates(o),matches=expected.map(c=>transactions.find(t=>t.sourceKey==='portal:'+o.id+':'+c.suffix));
+ const discrepancies=matches.filter((t,i)=>t&&(t.amount!==expected[i].amount||t.date!==expected[i].date||t.cashAccount!==expected[i].cashAccount)).length;const posted=matches.filter((t,i)=>t?.status==='Tercatat'&&t.amount===expected[i].amount&&t.date===expected[i].date&&t.cashAccount===expected[i].cashAccount).length,missing=matches.filter(t=>!t).length;
+ return {discrepancies,expected:expected.length,posted,pending:expected.length-posted,missing,status:discrepancies?'Perlu rekonsiliasi sumber':!expected.length?'Belum ada kejadian keuangan':posted===expected.length?'Sudah dibukukan':missing?'Menunggu sinkron laporan':'Perlu diperiksa & dibukukan',sourceKeys:expected.map(c=>'portal:'+o.id+':'+c.suffix)};
+}
+export function projectDeskOrder(o,history=[]){
+ const lines=o.price?.lines?.length?o.price.lines:o.price?[o.price]:[],price=o.price,total=price?.total||0;
+ const quantityLabel=lines.length?lines.map(l=>`${l.billedQuantity??l.quantity??l.weight??0} ${l.service?.unit||'KG'} ${l.service?.name||''}`).join(' + '):'Belum ditimbang';
+ const local=v=>v?new Date(Date.parse(v)+7*3600000).toISOString().slice(0,19)+'+07:00':'';
+ return {id:o.id,deskManaged:true,hasPrice:!!price,kind:o.kind,linkedThl:o.linkedThl||'',linkedInt:o.linkedInt||'',excludeFromTotals:o.status==='LINKED',customer:o.customer.name||'Identitas belum diketahui',customerId:'portal:'+o.id,contact:o.customer.contact,room:o.room.id,building:o.room.building,floor:o.room.floor,roomType:o.room.roomType,type:o.room.type,checkout:o.room.checkout,stage:stages[o.status]||'Tertahan',deskStatus:o.status,identity:o.identity,created:local(o.createdAt),completed:local(o.handover?.at),handoverAt:local(o.handover?.at),due:local(price?.due||''),total,weight:lines.reduce((n,l)=>n+(Number(l.weight)||0),0),quantityLabel,packageLines:lines.map(l=>({name:l.service?.name,unit:l.service?.unit,rate:l.service?.price,quantity:l.billedQuantity??l.quantity??l.weight,total:l.total})),package:lines.map(l=>l.service?.name).filter(Boolean).join(' + ')||'Paket menunggu timbangan',serviceSnapshot:lines[0]?.service||null,mode:o.customer.method==='pickup'?'Jemput':'Antar langsung',bags:o.bags||0,pic:o.assignedTo,picName:o.assignedName||o.acceptedBy?.name||'',method:o.pay.method||'',paidAt:local(o.pay.paidAt),paidAmount:o.pay.received||0,refundPaid:o.ref.paid||0,payment:o.pay.status==='PAID'?(o.pay.method==='Cash'?'Lunas Cash':'Lunas Terverifikasi'):o.pay.status==='PENDING VERIFICATION'?'Menunggu Verifikasi':o.pay.status==='OVERPAID'?'Lebih bayar':o.pay.status==='UNDERPAID'?'Kurang bayar':'Belum bayar',financePayments:(o.pay.attempts||[]).filter(a=>a.received).map(a=>({id:a.id,date:F.dateOf(a.receivedAt,'Asia/Jakarta'),at:a.receivedAt,amount:a.received,method:a.method})),settlementStatus:o.set.status,clear:clearState(o),alerts:alerts(o),history,financial:accountingState(o)};
+}
+export async function laundryJournal(env,m){
+ if(!['Owner','Finance','Operator'].includes(m.role))return {revision:null,orders:[]};
+ const rows=(await env.DB.prepare("SELECT data,revision FROM laundry_orders WHERE COALESCE(json_extract(data,'$.simulation'),0)=0 ORDER BY created_at DESC,id DESC").all()).results;
+ const histories=new Map();
+ if(rows.length){const events=(await env.DB.prepare("SELECT e.order_id,e.at,e.action,e.data FROM laundry_events e JOIN laundry_orders o ON o.id=e.order_id WHERE COALESCE(json_extract(o.data,'$.simulation'),0)=0 ORDER BY e.at,e.id").all()).results;for(const e of events){const d=JSON.parse(e.data);if(!histories.has(e.order_id))histories.set(e.order_id,[]);histories.get(e.order_id).push({at:e.at,text:Labels.activity(e.action),by:d.actorName||'',reason:d.reason||''});}}
+ return {revision:`${rows.length}:${rows.reduce((n,r)=>n+Number(r.revision),0)}`,orders:rows.map(r=>projectDeskOrder(JSON.parse(r.data),histories.get(JSON.parse(r.data).id)||[]))};
+}

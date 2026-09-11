@@ -117,3 +117,17 @@ test('An existing Owner approves a new Owner and that approved account keeps its
   const secondState=await business('sync',{cookie:secondCookie});assert.equal(secondState.status,200);assert.equal(secondState.body.member.role,'Owner');
   assert.equal((await f.DB.prepare('SELECT role FROM members WHERE id=?').bind('original-owner-fixture').first()).role,'Owner');
 });
+
+test('Resend uses existing signup confirmation without creating a session or assigning a role',async t=>{
+ const f=await fixture(t);let captured;t.mock.method(globalThis,'fetch',async(url,options)=>{captured={url:new URL(url),body:JSON.parse(options.body)};return Response.json({});});
+ const r=await call(f,'resend',{email:credentials.email});assert.equal(r.status,200);assert.equal(r.body.next,'confirm');assert.equal(r.body.retryAfter,60);assert.equal(captured.url.pathname,'/auth/v1/resend');assert.equal(captured.url.searchParams.get('redirect_to'),'https://local.test/login');assert.equal(captured.body.type,'signup');assert(!captured.body.password);assert.equal(await total(f,'staff_sessions'),0);assert.equal(await total(f,'members'),0);
+});
+test('Signup attempts do not exhaust login or email-code verification allowance',async t=>{
+ const f=await fixture(t);t.mock.method(globalThis,'fetch',async url=>Response.json(String(url).includes('/signup')?{user:{...verified,email_confirmed_at:null}}:tokens));
+ for(let i=0;i<8;i++)assert.equal((await call(f,'signup',credentials)).status,200);
+ assert.equal((await call(f,'signup',credentials)).status,429);assert.equal((await call(f,'confirm',{email:credentials.email,code:'123456'})).status,200);assert.equal((await call(f,'login',credentials)).status,200);
+});
+test('Invalid form fields do not consume valid registration attempts',async t=>{
+ const f=await fixture(t);let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({user:{...verified,email_confirmed_at:null}});});
+ for(let i=0;i<9;i++)assert.equal((await call(f,'signup',{...credentials,password:'short'})).status,400);assert.equal(calls,0);assert.equal(await total(f,'auth_limits'),0);assert.equal((await call(f,'signup',credentials)).status,200);
+});
