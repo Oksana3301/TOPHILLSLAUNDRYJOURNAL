@@ -2,9 +2,9 @@
 
 ## Current state
 
-Routes and encrypted server sessions are implemented, but email login stays disabled until a real Supabase Auth project is configured. No project, user, email delivery or successful external login is simulated in production. Existing ChatGPT sign-in and Owner approvals continue to work.
+Routes and encrypted server sessions are implemented. The live Site uses project `dkiqgwziefazwrcieavq`, and `/api/auth/config` reports the Supabase Auth configuration enabled. This verifies runtime configuration, not email delivery or a completed user login. The existing ChatGPT Owner identity and approval rules are preserved; no real accounts or successful logins were fabricated.
 
-This extends the existing custom Worker rather than installing an authentication starter. Public Site routes reach the application; Supabase Auth is the external password verifier. The application retains server-side authorization through the existing members table. D1/R2 business data is not migrated to Supabase.
+Public Site routes reach the existing custom Worker through a protected Edge gateway; Supabase Auth is the external password verifier. The application retains server-side authorization through the existing members table. Business data now resides in PostgreSQL and private Supabase Storage; see `docs/supabase/MIGRATION-HANDOFF.md` for migration verification.
 
 ## Runtime configuration
 
@@ -29,17 +29,17 @@ Deploy the saved version after changing environment values. The activation check
 
 New verified Supabase users map to stable `sb:<provider-user-id>` member IDs and start as Operator/Menunggu regardless of requested role. Requested Owner is information for review, not authorization. Existing active Owner selects actual role/status through Akses akun. No automatic linking based on matching email addresses: existing ChatGPT and Supabase identities remain separate until Owner explicitly grants access. Keep the original Owner account available during setup.
 
-Passwords are forwarded to Supabase over HTTPS and are not stored in D1, logs, localStorage, or cookies by Top Hills. Usernames/display names remain ordinary member metadata.
+Passwords are forwarded to Supabase over HTTPS and are not stored in the application database, logs, localStorage, or cookies by Top Hills. Usernames/display names remain ordinary member metadata.
 
 ## Cookies, devices and sessions
 
-- Each successful login creates a separate random 256-bit session. Only its hash is stored as the session key in D1.
+- Each successful login creates a separate random 256-bit session. Only its hash is stored as the session key in the application database.
 - Browser cookie: `__Host-th-session`, Secure, HttpOnly, SameSite=Lax, Path=/, no Domain, seven-day max age.
 - Provider access/refresh tokens are AES-GCM encrypted server-side, never returned to browser JavaScript.
 - Absolute lifetime seven days; idle timeout twelve hours. Server refreshes expiring provider access tokens with a database lease to limit concurrent refresh conflicts.
 - Membership/role authorization remains checked by the business API. Disabling a member prevents subsequent business requests even if a session cookie remains.
 - Users can list and revoke their own email sessions. Global logout/reset revokes Top Hills email sessions, not unrelated sessions on other products.
-- Changing device requires login on that device. Cookies do not transfer; business data comes from D1/R2 after authorization. Clearing cookies requires login again but does not delete server records.
+- Changing device requires login on that device. Cookies do not transfer; business data comes from PostgreSQL/Storage after authorization. Clearing cookies requires login again but does not delete server records.
 - Changes to the Supabase project itself may not invalidate an already-issued local session until its provider token refresh. For immediate business access revocation, use Owner's member status controls or app session revocation.
 - Use a direct top-level Site tab; third-party cookie restrictions can affect an embedded view.
 
@@ -51,7 +51,7 @@ Desk polling avoids overlapping loads, fetches room catalog at most once per min
 
 ## Validation and remaining checks
 
-Thirteen local tests use SQLite and a mocked Supabase provider for cookie flags, encrypted token persistence, pending Owner requests, two-device sessions, targeted/global revocation, idle timeout, refresh, CSRF, attempt limits and unconfirmed-email rejection. Existing finance/access/workflow regression tests pass. These are not a real Supabase delivery/login test, a penetration test, or mobile browser QA. Live activation must wait for the actual project settings and email delivery configuration.
+Thirteen authentication tests run against both SQLite and local PostgreSQL with a mocked Supabase provider for cookie flags, encrypted token persistence, pending Owner requests, two-device sessions, targeted/global revocation, idle timeout, refresh, CSRF, attempt limits and unconfirmed-email rejection. Existing finance/access/workflow regression tests pass. The published authentication configuration responds normally and unauthenticated staff access is rejected. These are not a real Supabase delivery/login test, a penetration test, or mobile browser QA. Check the actual Auth settings and email-code delivery before relying on email sign-in for operations.
 
 Official references:
 - https://supabase.com/docs/guides/auth/passwords
