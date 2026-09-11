@@ -1,9 +1,15 @@
 const fail = () => Response.json({error: 'Koneksi penyimpanan belum siap. Coba lagi sebentar.'}, {status: 503, headers: {'Cache-Control': 'no-store'}});
 export async function proxySupabase(req, env, pathOverride) {
   const origin = new URL(req.url).origin;
-  if (!/^https:\/\/[a-z]{20}\.supabase\.co$/.test(env.SUPABASE_URL || '') ||
-      !/^[a-f0-9]{64}$/.test(env.SUPABASE_BACKEND_TOKEN || '') ||
-      !/^[a-f0-9]{64}$/.test(env.AUTH_SESSION_KEY || '')) return fail();
+  const configured = {
+    url: /^https:\/\/[a-z]{20}\.supabase\.co$/.test(env.SUPABASE_URL || ''),
+    backendCredential: /^[a-f0-9]{64}$/.test(env.SUPABASE_BACKEND_TOKEN || ''),
+    sessionKey: /^[a-f0-9]{64}$/.test(env.AUTH_SESSION_KEY || '')
+  };
+  if (!Object.values(configured).every(Boolean)) {
+    console.error('Top Hills backend configuration unavailable', JSON.stringify(configured));
+    return fail();
+  }
   const path = pathOverride || new URL(req.url).pathname + new URL(req.url).search;
   if (!pathOverride && path.startsWith('/api/__backend/')) return new Response(null, {status: 404});
   const headers = new Headers(req.headers);
@@ -16,16 +22,24 @@ export async function proxySupabase(req, env, pathOverride) {
   headers.set('X-Top-Hills-Source-Origin', origin);
   headers.set('X-Top-Hills-Source-Path', path);
   headers.set('X-Top-Hills-Session-Key', env.AUTH_SESSION_KEY);
-  headers.delete('Host'); headers.delete('Content-Length');
+  for (const name of ['Host', 'Content-Length', 'Connection', 'OAI-Sites-Authorization', 'Signature', 'Signature-Input', 'Signature-Agent', 'Cloudflare-Workers-Version-Key']) headers.delete(name);
   try {
     const response = await fetch(env.SUPABASE_URL + '/functions/v1/tophills-api', {
       method: req.method, headers, body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
-      duplex: 'half', redirect: 'error', signal: AbortSignal.timeout(45000)
+      duplex: 'half', redirect: 'manual', signal: AbortSignal.timeout(45000)
     });
+    if (response.status >= 300 && response.status < 400) {
+      await response.body?.cancel();
+      console.error('Top Hills backend refused an upstream redirect');
+      return fail();
+    }
     const outputHeaders = new Headers(response.headers);
     // Internal transport credentials must never reach a client, even on errors.
     for (const name of [...outputHeaders.keys()]) if (/^x-top-hills-|^authorization$|^apikey$/i.test(name)) outputHeaders.delete(name);
     outputHeaders.set('Cache-Control', 'no-store');
     return new Response(response.body, {status: response.status, headers: outputHeaders});
-  } catch { return fail(); }
+  } catch (error) {
+    console.error('Top Hills backend transport unavailable', error?.name || 'unknown');
+    return fail();
+  }
 }

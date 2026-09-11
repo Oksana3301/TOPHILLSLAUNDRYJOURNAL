@@ -26,10 +26,11 @@ test('Gateway denies untrusted callers before exposing identity or data', async 
 test('Proxy restores customer auth and CSRF origin only inside an authenticated backend request', async t => {
   let incoming;
   t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(options.redirect, 'manual');
     incoming = await backendRequest(new Request(url, options), config);
     return new Response('ok', {headers: {'X-Top-Hills-Session-Key': key, 'Set-Cookie': '__Host-th-session=test; Secure; HttpOnly'}});
   });
-  const req = new Request(origin + '/api/portal/approve', {method: 'POST', headers: {Authorization: 'Bearer customer-capability', Origin: origin, 'X-Top-Hills': '1', 'X-Top-Hills-Internal': 'scheduled'}, body: '{}'});
+  const req = new Request(origin + '/api/portal/approve', {method: 'POST', headers: {Authorization: 'Bearer customer-capability', Origin: origin, 'X-Top-Hills': '1', 'X-Top-Hills-Internal': 'scheduled', 'OAI-Sites-Authorization': 'Bearer platform-only'}, body: '{}'});
   const env = {SUPABASE_URL: 'https://' + 'a'.repeat(20) + '.supabase.co', SUPABASE_BACKEND_TOKEN: token, AUTH_SESSION_KEY: key};
   const response = await proxySupabase(req, env);
   assert.equal(response.status, 200);
@@ -39,9 +40,16 @@ test('Proxy restores customer auth and CSRF origin only inside an authenticated 
   assert.equal(incoming.request.headers.get('Origin'), origin);
   assert.equal(incoming.internal, false);
   assert.equal(incoming.request.headers.get('X-Top-Hills-Session-Key'), null);
+  assert.equal(incoming.request.headers.get('OAI-Sites-Authorization'), null);
   assert.equal(response.headers.get('X-Top-Hills-Session-Key'), null);
   assert.match(response.headers.get('Set-Cookie'), /HttpOnly/);
   assert.equal((await proxySupabase(new Request(origin + '/api/__backend/scheduled'), env)).status, 404);
+});
+test('An upstream redirect never forwards backend credentials to a second host', async t => {
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async () => {calls++; return new Response(null, {status: 302, headers: {Location: 'https://other.test'}});});
+  const response = await proxySupabase(new Request(origin + '/api/auth/config'), {SUPABASE_URL: 'https://' + 'a'.repeat(20) + '.supabase.co', SUPABASE_BACKEND_TOKEN: token, AUTH_SESSION_KEY: key});
+  assert.equal(response.status, 503); assert.equal(calls, 1);
 });
 test('Migration export is disabled, authenticated, expiring, and keeps full row data', async () => {
   const data = JSON.stringify({large: 'x'.repeat(100000)}), rows = [{id: 'main', data}];
