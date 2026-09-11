@@ -56,3 +56,7 @@ jobs:
       - name: Test cache behavior
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node --test tests/cache-tests.mjs
+
+      - name: Test Supabase diagnostic with mocked services
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run test:supabase

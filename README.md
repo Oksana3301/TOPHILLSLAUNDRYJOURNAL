@@ -41,6 +41,7 @@ npm run build
 npm test
 npm run test:laundry
 npm run test:auth
+npm run test:supabase
 node --test tests/cache-tests.mjs
 ```
 
@@ -66,6 +67,7 @@ Tidak ada database operasional, dump akun, file bukti customer, `.env`, key, tok
 2. [Aktivasi Supabase Auth](AUTH-SETUP.md): email/password dan sesi perangkat; bukan migrasi database.
 3. [Audit SOP v0.4](SOP-V04-RELEASE-AUDIT.md): apa yang sudah/belum diimplementasikan.
 4. [Implementasi laporan](FINANCE-IMPLEMENTATION.md): kontrol dan batas modul keuangan.
+5. [Proyek Supabase dan hasil pemeriksaan koneksi](docs/supabase/PROJECT-CONNECTION.md): tujuan `dkiqgwziefazwrcieavq`, konektivitas Auth/Data/Storage yang terverifikasi, keterbatasan akses SQL dan alat pemeriksaan lokal. Tidak ada key asli dalam repo.
 
 `dist/resources/Supabase-Schema.sql` merupakan **blueprint lama tiga tabel**, belum migrasi lengkap untuk versi 8. Jangan menjalankannya dengan asumsi seluruh laundry, akun, bukti dan jurnal akan langsung tersambung. Kontrak API PostgreSQL, migrasi 18 tabel, Storage dan pengujian tetap harus dibuat.
 

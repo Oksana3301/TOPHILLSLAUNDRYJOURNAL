@@ -80,8 +80,10 @@ Belum ada langkah cutover, perubahan runtime secret, perubahan schema produksi, 
 
 ## Pemeriksaan koneksi pada permintaan terbaru
 
-11 September 2026: pemasangan plugin Supabase telah dikonfirmasi berhasil. Namun sesi pengerjaan belum menerima operasi Supabase untuk daftar project, inspeksi tabel atau SQL. Karena itu project tujuan, skema dan data di Supabase belum terverifikasi. Jangan menyatakan database telah dipindahkan berdasarkan pemasangan plugin atau koneksi GitHub saja.
+11 September 2026: proyek tujuan sekarang teridentifikasi sebagai `dkiqgwziefazwrcieavq`. Pemeriksaan langsung menggunakan API key dari environment proses menerima HTTP 200 untuk Auth, spesifikasi Data API dan daftar bucket Storage. Spesifikasi skema `public` menampilkan 0 tabel/view dan fungsi `rls_auto_enable`; daftar bucket kosong. Ini bukan inventaris seluruh skema database. Lihat [hasil dan panduan koneksi](PROJECT-CONNECTION.md).
+
+Plugin Supabase terpasang, tetapi operasi inspeksi proyek/SQL belum tersedia di sesi pengerjaan. API key proyek bukan kredensial Management API. Inventaris SQL baca saja tersedia di [INSPECT-PROJECT.sql](INSPECT-PROJECT.sql); belum dijalankan pada database tujuan. Pemeriksaan per tabel melalui CLI Node juga belum memperoleh hasil langsung karena akses jaringan lingkungan pengerjaan. Jangan menyatakan migrasi berhasil berdasarkan konektivitas API atau push GitHub.
 
 Pemeriksaan metadata website mengonfirmasi 18 tabel di binding `DB`, sesuai daftar di atas. Tidak ada data pelanggan diekspor, secret runtime diubah, atau tabel produksi dihapus. Perubahan paket ganda menggunakan record JSON order yang sudah ada; semua field tambahan harus dipertahankan dalam migrasi.
 
-Langkah berikut yang diperlukan adalah membuka project Supabase dari koneksi yang sudah terpasang, mencocokkan schema/Storage aktual, lalu menyelesaikan adapter dan cutover di atas. Tidak perlu mengirim password atau service key ke percakapan. Penghapusan ruang latihan dan percobaan transaksi langsung mengikuti keberhasilan migrasi dan verifikasi, sesuai urutan permintaan Atika.
+Langkah berikut adalah memperoleh hasil inventaris SQL skema dan hak akses, lalu menyelesaikan adapter dan cutover di atas. Secret key yang sudah dibagikan perlu diganti dan disimpan melalui konfigurasi secret server yang aman. Penghapusan ruang latihan dan percobaan transaksi langsung mengikuti keberhasilan migrasi dan verifikasi, sesuai urutan permintaan Atika.
