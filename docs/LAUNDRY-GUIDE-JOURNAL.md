@@ -46,3 +46,11 @@ Lini masa menampilkan aktivitas, nama petugas dan waktu. Nomor pesanan tetap ter
 Pendaftaran, konfirmasi kode, dan login mempunyai hitungan percobaan per email yang terpisah, dengan batas jaringan bersama tetap berlaku. Formulir tidak valid tidak menghabiskan jatah percobaan. Pengiriman ulang konfirmasi memakai jalur resend Supabase dan tidak membuat akun, sesi atau peran baru. Waktu tunggu ditampilkan bila layanan mengembalikannya.
 
 Kuota pengiriman email Supabase tetap berlaku. Jika layanan menolak karena batas email, periksa [pengiriman email proyek](https://supabase.com/docs/guides/auth/auth-smtp) dan [batas layanan](https://supabase.com/docs/guides/auth/rate-limits). Tidak ada perubahan SMTP atau penonaktifan verifikasi email pada pembaruan ini. Koneksi MCP/skill Supabase di ChatGPT sudah tersedia; tidak diperlukan konfigurasi Claude.
+
+## Pembaruan bahasa antarmuka
+
+Riwayat profil, penghuni, laporan, penilaian, dan pengaturan lama dirangkum saat ditampilkan tanpa menulis ulang bukti asli. Perubahan baru menyimpan kalimat kegiatan singkat dan rincian sebelum/sesudah secara terpisah. Linimasa, jejak keuangan, rincian transaksi, dan laporan unduhan menggunakan nama kegiatan serta nomor pesanan/nota yang berguna, bukan identitas akun atau kunci sumber internal.
+
+Formulir kebijakan memakai nama bagian usaha, pilihan waktu setempat, dan pemilih tanggal libur. Identitas bagian usaha lama tetap dipertahankan saat namanya diubah. Tampilan linimasa pada layar kecil memakai kartu kegiatan; warna kertas, tinta, biru pastel, tipografi dan tanda status mengikuti referensi visual yang diunggah kembali.
+
+Regresi diuji untuk catatan lama yang lengkap/rusak, nama profil baru, bukti sebelum/sesudah, identitas petugas, nomor pesanan, label status, dan penyimpanan kebijakan. Tidak ada perubahan data operasional atau skema dalam perbaikan bahasa ini.

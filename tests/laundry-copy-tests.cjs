@@ -5,3 +5,19 @@ const events=Journal.events({orders:[]},{transactions:[{id:'PORTAL-INTERNAL-UUID
 const ctx={window:null,THLaundryGuide:Guide,THLaundryScenarios:Scenarios};ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('dist/laundry-guide-ui.js','utf8'),ctx);
 const o={id:'THL-COPY',status:'CANCELLED',kind:'THL',clear:'CANCELLED CLEAR',customerRevision:1,identity:'CONFIRMED',pay:{received:0,attempts:[]},set:{status:'NOT CREATED'},ref:{},room:{},exceptions:[]};o.sopReviews=[{scenarioId:'06',role:'Finance',name:'Finance test',note:'Hasil <script> bukan HTML',signature:Guide.reviewKey(o),at:'2026-09-11T01:00:00Z'}];const html=ctx.THLaundryGuideUI.scenarios(o,{role:'Finance'});assert(html.includes('Finance test'));assert(html.includes('&lt;script&gt;'));assert(!html.includes('Hasil <script>'));assert.equal((html.match(/data-scenario="/g)||[]).length,28);assert(!Scenarios.some(s=>/webhook|idempotency|token_hash|source_key/.test(JSON.stringify(s))));
 console.log('PASS Indonesian activity labels, order references, 28 readable scenarios and escaped role review receipts');
+
+const Copy=require('../dist/copy.js');
+const legacy='Profil mfixtureid1234 diperbarui: {"id":"mfixtureid1234","name":"Owner","active":true} → {"name":"Owner Contoh","position":"Owner","color":"blue"}';
+assert.equal(Copy.summary(legacy),'Profil Owner Contoh diperbarui.');
+assert.equal(Copy.summary('Profil mfixtureid1234 diperbarui: {rusak'),'Profil karyawan diperbarui.');
+assert.equal(Copy.summary('Parameter diperbarui: {"float":100} → {"float":200}'),'Pengaturan usaha diperbarui.');
+assert.equal(Copy.summary('Laporan abc diperbarui. Sebelumnya: {"employeeId":"emp1"}',{employees:[{id:'emp1',name:'Petugas Contoh'}]}),'Laporan aktivitas Petugas Contoh diperbarui.');
+assert.equal(Copy.person('sb:12345678-1234-1234-1234-123456789abc'), 'Petugas');
+assert.equal(Copy.person('system-daily-draft'), 'Petugas');
+assert.equal(Copy.label('PENDING REVIEW'),'Menunggu pemeriksaan');
+assert.equal(Copy.error('Kunci pengiriman berbeda.'),'Buka kembali formulir lalu coba simpan. Catatan yang sama tidak akan dibuat dua kali.');
+assert.equal(Copy.summary('Pembayaran THL-20260911-001 sebesar Rp 12.000'), 'Pembayaran THL-20260911-001 sebesar Rp 12.000');
+const ops={orders:[],audit:[{id:'internal-audit-id',actor:'sb:12345678-1234-1234-1234-123456789abc',at:'2026-09-11T14:34:00Z',text:legacy}]},unchanged=JSON.stringify(ops);
+const auditEvent=Journal.events(ops,{transactions:[]})[0];assert.equal(auditEvent.label,'Profil Owner Contoh diperbarui.');assert.equal(auditEvent.source,'');assert.equal(auditEvent.actor,'');assert.equal(JSON.stringify(ops),unchanged);
+for(const [name,text] of [['panduan',fs.readFileSync('dist/sop-coverage.html','utf8')],['kesiapan',fs.readFileSync('dist/readiness.js','utf8')]])assert(!/webhook|id\|nama|IANA|byte lampiran|metadata|Token kamar|Pengiriman atomik/.test(text),name+' has technical copy');
+console.log('PASS historical profile summaries, malformed records, actor privacy, order references and unchanged audit evidence');

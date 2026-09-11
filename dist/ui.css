@@ -467,7 +467,24 @@ input::placeholder, textarea::placeholder { color: #768396; }
 .laundry-order-form details > summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
 .laundry-order-form details[open] > summary { margin-bottom: 16px; }
 .service-catalog [hidden], .laundry-order-form [hidden] { display: none !important; }
+.journal-activity { max-width: 48ch; overflow-wrap: anywhere; line-height: 1.5; }
+.journal-activity strong { font-weight: 500; }
+.journal-actor { display: block; margin-top: 5px; color: var(--text-secondary, #6d6f68); }
+.policy-repeat { min-width: 0; border: 1px solid #d8d8d0; border-radius: 12px; padding: 16px; }
+.policy-repeat legend { padding: 0 8px; font-weight: 600; }
+.policy-repeat .finance-inline-fields { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 12px 0; }
+.policy-repeat .field { flex: 1 1 180px; min-width: 0; }
+.policy-repeat .btn { min-height: 44px; }
 @media (max-width: 600px) {
+ #journal-events .table-wrap { overflow: visible; border: 0; }
+ #journal-events table, #journal-events tbody { display: block; min-width: 0; width: 100%; }
+ #journal-events thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+ #journal-events tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'when when' 'activity activity' 'division amount'; gap: 10px 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #d8d8d0; border-radius: 14px; background: #fff; }
+ #journal-events td { display: block; padding: 0; border: 0; min-width: 0; white-space: normal; }
+ #journal-events .journal-when { grid-area: when; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+ #journal-events .journal-activity { grid-area: activity; max-width: none; font-size: 16px; }
+ #journal-events .journal-division { grid-area: division; }
+ #journal-events .journal-amount { grid-area: amount; align-self: center; font-variant-numeric: tabular-nums; }
  .service-catalog { grid-template-columns: 1fr; }
  .order-form-intro { align-items: flex-start; }
  .service-estimate { padding: 16px; }
@@ -475,3 +492,5 @@ input::placeholder, textarea::placeholder { color: #768396; }
  .service-catalog-bar .btn { width: 100%; justify-content: center; }
  .service-setting summary { flex-direction: column; }
 }
+
+.receipt-paper, .sop-source { font-family: Inter, sans-serif; font-size: 15px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
