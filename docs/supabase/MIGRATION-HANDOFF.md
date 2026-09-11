@@ -1,89 +1,63 @@
-# Handoff database Supabase — Top Hills
+# Supabase migration — Top Hills
 
-Tanggal: 11 September 2026. Kondisi yang dijelaskan berasal dari source website versi 8.
+Updated 11 September 2026. Target: `dkiqgwziefazwrcieavq`, TOPHILLSLAUNDRYJOURNAL.
 
-**Status: belum ada adapter PostgreSQL/Storage aktif.** Menambahkan project URL dan API key tidak mengganti D1/R2. Tidak ada data usaha yang diekspor atau diimpor oleh paket source ini.
+## Current checkpoint
 
-## Dua pekerjaan berbeda
+The protected Edge API is deployed and its database health check returns HTTP 200.
+All 18 PostgreSQL application tables exist with RLS enabled; browser roles have no direct grants.
+The private bucket `top-hills-evidence` exists (10 MiB limit). The existing Site is still using D1/R2 until complete export/import verification and explicit runtime cutover.
 
-| Pekerjaan | Sudah ada | Masih perlu |
-|---|---|---|
-| Supabase Auth | Email/password, OTP, reset, sesi terenkripsi, pencabutan sesi | Project URL/publishable key, email provider, konfigurasi secret runtime dan uji nyata |
-| Supabase Database | Blueprint lama untuk workspace/members/mutations | Skema PostgreSQL lengkap, adapter runtime, transaksi/RPC, migrasi dan validasi |
-| Supabase Storage | Kontrak API bukti saat ini memakai R2 | Private bucket, akses terbatas, salin byte bukti, relasi metadata dan cleanup |
+## Architecture
 
-## Cakupan data aktif
+The existing Site serves the application and proxies `/api/*` to `tophills-api`.
+The Edge function verifies a separate 256-bit backend credential, original origin and path before restoring customer capabilities or trusted platform identity. It never accepts SQL from callers.
+Only the credential SHA-256 hash appears in source. The current session encryption key is forwarded privately between servers, preserving encrypted sessions.
 
-Sumber otoritatif adalah `db/schema.ts` dan migrasi `drizzle/`:
+The Edge function uses Supabase-provided DB/key secrets. It executes application queries under `service_role`, with parameter binding and one transaction per D1-style batch. The original API retains all membership, customer capability, proof, audit and revision checks.
+Direct public/authenticated Data API access is intentionally denied. The security advisor's informational RLS-without-policy findings reflect this server-only access model.
 
-| Kelompok | Tabel saat ini |
+## Schema and recorded migrations
+
+`supabase/schema.sql` contains the complete schema, preserving text JSON and IDs. Integer money, counters and session timestamps use bigint. There is no business seed.
+The Supabase migration service recorded:
+
+- `20260911121221 create_tophills_application_schema`
+- `20260911121349 restrict_internal_rls_trigger_execution`
+
+The second migration revokes public execution of the existing internal `rls_auto_enable()` event trigger. Its trigger behavior remains unchanged.
+These are actual service-returned versions, not invented local migration filenames. Local tests apply schema.sql directly to disposable PGlite.
+
+## Data groups
+
+| Group | Tables |
 |---|---|
-| Workspace/akun | `workspace`, `members` |
-| Keuangan | `finance_transactions`, `journals`, `journal_lines`, `attachments`, `finance_records`, `finance_audit`, `mutations` |
-| Laundry | `laundry_rooms`, `laundry_orders`, `laundry_counters`, `laundry_events`, `laundry_proofs`, `laundry_mutations` |
-| Sesi/limit | `staff_sessions`, `auth_limits` |
-| Latihan | `laundry_demo_sessions` |
+| Workspace and accounts | workspace, members |
+| Finance | finance_transactions, journals, journal_lines, attachments, finance_records, finance_audit, mutations |
+| Laundry | laundry_rooms, laundry_orders, laundry_counters, laundry_events, laundry_proofs, laundry_mutations |
+| Sessions and limits | staff_sessions, auth_limits |
+| Historical practice | laundry_demo_sessions |
 
-Total 18 tabel. Beberapa record menyimpan JSON terstruktur; jangan kehilangan status PAY/SET/REF, attempt pembayaran, revision history, bukti, pelaku dan sumber order saat dinormalisasi.
+All JSON fields remain intact, including package lines, quote versions, PAY/SET/REF, operator exceptions, counters and audit history. Existing ChatGPT IDs and Supabase `sb:<uuid>` IDs remain separate; no email-based account merging occurs.
 
-Blueprint `dist/resources/Supabase-Schema.sql` hanya memuat `workspaces`, `members`, `mutations` versi rancangan awal. Simpan sebagai referensi; ia belum menggantikan 18 tabel ini.
+## Controlled cutover
 
-## Kontrak yang wajib dipertahankan
+1. Build and run all local suites, including the same finance/laundry/auth API scenarios on PostgreSQL.
+2. Deploy the temporary export route with a fresh, expiring server credential. Migration mode pauses every API mutation and scheduled generator, including writes normally triggered by GET.
+3. Export every table with keyset pagination. Never migrate truncated table-viewer output. Copy all proof bytes and preserve a private backup.
+4. Import rows without changing IDs/revisions/text, compare table hashes/counts and proof hashes; verify ledger and account relationships.
+5. Set `DATA_BACKEND=supabase`, retain the existing AUTH_SESSION_KEY, set the backend credential and remove the temporary export settings.
+6. Publish the exact validated source, verify runtime database/Storage/Auth behavior, and remove training entry points.
 
-- ID kamar/order/akun dan referensi THL/PAY/SET/REF tetap, termasuk ID yang dibatalkan.
-- Pembaruan memakai compare-and-swap revision: tepat satu penulis berhasil untuk revisi yang sama.
-- Kunci mutasi unik dan hash payload mencegah retry menggandakan transaksi. Nomor server tidak dapat digunakan ulang.
-- Perubahan order, event audit dan pencatatan idempotensi berada dalam satu transaksi database.
-- Approval Owner/Finance dan pemisahan penerima uang/pemeriksa diterapkan oleh server; browser tidak mengirim peran yang dipercaya.
-- Customer token hanya memberi akses ke kamar/order yang diizinkan, bukan daftar order umum atau bukti bank.
-- Demo tetap berada di penyimpanan terpisah dari usaha; expiry dan batas kapasitas tetap berlaku.
-- Setiap laporan keuangan tetap berasal dari jurnal yang sama, dengan bukti, tanggal akuntansi, waktu kejadian dan jejak perubahan.
+There is no automatic fallback to D1/R2. Those sources remain untouched for rollback; after any new Supabase writes, rollback requires reconciling those writes first.
 
-## Area kode yang perlu diubah
+## Verification
 
-| File | Kebutuhan migrasi |
-|---|---|
-| `server/worker.mjs` | Workspace, members, finance, authorization dan penulisan atomik |
-| `server/laundry-api.mjs` | Room/order/proof/event/counter/mutation dan query filter |
-| `server/laundry-finance.mjs` | Pembacaan order ke usulan laporan, unik berdasarkan sumber |
-| `server/staff-auth.mjs` | Sesi terenkripsi, lease refresh token dan rate limiting |
-| `server/laundry-demo-api.mjs` | Ruang demo, revision, expiry dan limit |
-| `server/reset-business.mjs` | Batas reset, preservation akun dan cleanup file |
+- 62 existing finance, laundry and authentication API scenarios pass against local PostgreSQL/PGlite.
+- 13 mocked diagnostic and backend boundary checks pass, including transaction rollback, credential isolation, export completeness, and deletion-stable Storage pagination.
+- Existing Node.js 24 finance, laundry, auth and cache suites pass.
+- GitHub Actions builds both backends and runs tests on local/fake data only. No deployment, secrets, production URLs or production database access in CI.
 
-Ganti `.prepare/.bind/.first/.all/.run/.batch`, `INSERT OR IGNORE`, `json_extract/json_each` serta `meta.changes` dengan operasi PostgreSQL/RPC yang mempunyai jaminan transaksi setara. Jangan mengganti query menjadi beberapa request HTTP terpisah jika sebelumnya harus atomik.
+Actual email delivery, real user login and independent money reconciliation require the real account holders. QRIS payment-provider integration is separate and must never fabricate a successful payment.
 
-Worker saat ini memerlukan akses database melalui API HTTPS; jangan mengasumsikan URL Postgres TCP bisa dimasukkan begitu saja. Pilih kontrak RPC terbatas atau backend yang memegang transaksi database, dan jangan membuat endpoint SQL/RPC bebas dari browser.
-
-## Identitas, secret, dan host
-
-- ID ChatGPT dan `sb:<uuid>` Supabase merupakan identitas berbeda. Tidak ada penggabungan otomatis berdasarkan email.
-- Auth yang sudah disiapkan masih memakai D1 untuk membership, sesi terenkripsi dan limit. Mengaktifkan Supabase Auth saja tetap memerlukan D1.
-- `.env.example` hanya mencantumkan nama pengaturan yang memang didukung adapter Auth. File ini tidak otomatis dimuat oleh Worker.
-- `AUTH_SESSION_KEY` aktif disimpan di runtime, tidak dalam repo. Saat memindahkan sesi, pertahankan secret dengan aman atau invalidasi semua sesi dan minta login ulang; jangan menyalin ciphertext tanpa rencana key.
-- Jika backend memakai service-role/secret key untuk DB/Storage, simpan hanya di server. RLS tidak menggantikan proyeksi dan otorisasi di API saat memakai hak server.
-- Supabase publishable/anon key tidak memberi hak membuat Owner atau membaca data usaha umum.
-- Di host selain Sites, verifikasi/ganti identitas platform. Header `oai-authenticated-user-*` dari pengunjung tidak boleh dipercaya.
-- `.openai/hosting.json` menunjuk Site yang sudah ada. Pertahankan untuk workflow Sites; jangan menggunakannya untuk tanpa sengaja membuat/mengganti Site lain.
-
-## Urutan cutover
-
-1. Selesaikan skema, adapter dan pengujian pada project uji dengan data fiktif.
-2. Cadangkan database serta byte semua bukti. Paket GitHub berisi source, bukan cadangan data usaha.
-3. Bekukan penulisan dalam jendela migrasi yang disepakati.
-4. Salin record dengan ID/revisi/audit tetap dan bukti ke private Storage; validasi jumlah, hash dan relasi.
-5. Cocokkan kas, neraca/jurnal, piutang, PAY/SET/REF, order terbuka, INT dan barang dalam custody.
-6. Uji dua penulis bersamaan, respons hilang, revoke role/sesi, token palsu dan file lintas customer.
-7. Aktifkan tepat satu sumber data; jangan fallback diam-diam ke D1 ketika Supabase gagal.
-8. Buka penulisan setelah validasi. Rollback setelah ada transaksi baru wajib merekonsiliasi transaksi yang sudah masuk.
-
-Belum ada langkah cutover, perubahan runtime secret, perubahan schema produksi, atau data pelanggan yang dijalankan dalam handoff ini.
-
-## Pemeriksaan koneksi pada permintaan terbaru
-
-11 September 2026: proyek tujuan sekarang teridentifikasi sebagai `dkiqgwziefazwrcieavq`. Pemeriksaan langsung menggunakan API key dari environment proses menerima HTTP 200 untuk Auth, spesifikasi Data API dan daftar bucket Storage. Spesifikasi skema `public` menampilkan 0 tabel/view dan fungsi `rls_auto_enable`; daftar bucket kosong. Ini bukan inventaris seluruh skema database. Lihat [hasil dan panduan koneksi](PROJECT-CONNECTION.md).
-
-Plugin Supabase terpasang, tetapi operasi inspeksi proyek/SQL belum tersedia di sesi pengerjaan. API key proyek bukan kredensial Management API. Inventaris SQL baca saja tersedia di [INSPECT-PROJECT.sql](INSPECT-PROJECT.sql); belum dijalankan pada database tujuan. Pemeriksaan per tabel melalui CLI Node juga belum memperoleh hasil langsung karena akses jaringan lingkungan pengerjaan. Jangan menyatakan migrasi berhasil berdasarkan konektivitas API atau push GitHub.
-
-Pemeriksaan metadata website mengonfirmasi 18 tabel di binding `DB`, sesuai daftar di atas. Tidak ada data pelanggan diekspor, secret runtime diubah, atau tabel produksi dihapus. Perubahan paket ganda menggunakan record JSON order yang sudah ada; semua field tambahan harus dipertahankan dalam migrasi.
-
-Langkah berikut adalah memperoleh hasil inventaris SQL skema dan hak akses, lalu menyelesaikan adapter dan cutover di atas. Secret key yang sudah dibagikan perlu diganti dan disimpan melalui konfigurasi secret server yang aman. Penghapusan ruang latihan dan percobaan transaksi langsung mengikuti keberhasilan migrasi dan verifikasi, sesuai urutan permintaan Atika.
+The secret key previously shared in chat must be rotated in Supabase. Never commit or send server keys in chat.

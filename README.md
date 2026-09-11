@@ -2,7 +2,7 @@
 
 Source website Top Hills: dashboard laundry/hunian, laporan keuangan, portal QR kamar, akun staf, dan ruang latihan terisolasi. Paket ini berasal dari source versi website 8 (`edcc95b926546225f03323c44b65d6af7a5ae0cf`) beserta dokumen unggahan pengguna.
 
-**Database aktif masih Cloudflare D1, bukti file di R2. Supabase Auth sudah memiliki adapter, tetapi belum dikonfigurasi. Database usaha belum dimigrasikan ke Supabase.**
+**Backend PostgreSQL/Storage Supabase sudah tersedia dan teruji. Status peralihan data dan website dicatat dalam [handoff migrasi](docs/supabase/MIGRATION-HANDOFF.md); jangan menganggap push kode mengaktifkan runtime.**
 
 Website saat ini: [Top Hills & Co](https://top-hills-co-journal.atikadewi.chatgpt.site).
 
@@ -42,6 +42,8 @@ npm test
 npm run test:laundry
 npm run test:auth
 npm run test:supabase
+npm run build:supabase
+npm run test:postgres
 node --test tests/cache-tests.mjs
 ```
 
@@ -67,9 +69,9 @@ Tidak ada database operasional, dump akun, file bukti customer, `.env`, key, tok
 2. [Aktivasi Supabase Auth](AUTH-SETUP.md): email/password dan sesi perangkat; bukan migrasi database.
 3. [Audit SOP v0.4](SOP-V04-RELEASE-AUDIT.md): apa yang sudah/belum diimplementasikan.
 4. [Implementasi laporan](FINANCE-IMPLEMENTATION.md): kontrol dan batas modul keuangan.
-5. [Proyek Supabase dan hasil pemeriksaan koneksi](docs/supabase/PROJECT-CONNECTION.md): tujuan `dkiqgwziefazwrcieavq`, konektivitas Auth/Data/Storage yang terverifikasi, keterbatasan akses SQL dan alat pemeriksaan lokal. Tidak ada key asli dalam repo.
+5. [Proyek Supabase dan hasil pemeriksaan koneksi](docs/supabase/PROJECT-CONNECTION.md): tujuan `dkiqgwziefazwrcieavq`, konektivitas Auth/Data/Storage yang terverifikasi, hasil SQL dan alat pemeriksaan lokal. Tidak ada key asli dalam repo.
 
-`dist/resources/Supabase-Schema.sql` merupakan **blueprint lama tiga tabel**, belum migrasi lengkap untuk versi 8. Jangan menjalankannya dengan asumsi seluruh laundry, akun, bukti dan jurnal akan langsung tersambung. Kontrak API PostgreSQL, migrasi 18 tabel, Storage dan pengujian tetap harus dibuat.
+`dist/resources/Supabase-Schema.sql` merupakan **blueprint lama tiga tabel**, belum migrasi lengkap untuk versi 8. Jangan menjalankannya dengan asumsi seluruh laundry, akun, bukti dan jurnal akan langsung tersambung. Skema lengkap berada di `supabase/schema.sql`; backend terproteksi, Storage privat dan pengujian PostgreSQL tersedia.
 
 Saat berpindah host, jangan mempercayai header `oai-authenticated-user-*` dari internet. Fallback identitas ini hanya aman di belakang gateway Sites yang terpercaya; ganti/verifikasi jalur identitas sebelum memakai host lain.
 

@@ -60,3 +60,11 @@ jobs:
       - name: Test Supabase diagnostic with mocked services
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: npm run test:supabase
+
+      - name: Build protected Supabase API locally
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run build:supabase
+
+      - name: Test PostgreSQL parity with local PGlite
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run test:postgres

@@ -8,14 +8,18 @@
     "test": "node --test tests/finance-tests.cjs tests/finance-api-tests.mjs tests/readiness-tests.cjs tests/services-tests.cjs && node tests/finance-ui-tests.cjs && node tests/core-tests.cjs && node tests/access-tests.cjs",
     "test:laundry": "node --test tests/laundry-engine-tests.mjs tests/laundry-api-tests.mjs tests/laundry-v8-tests.mjs tests/laundry-packages-tests.mjs tests/laundry-demo-api-tests.mjs && node tests/laundry-demo-tests.cjs",
     "test:auth": "node --test tests/staff-auth-tests.mjs",
-    "test:supabase": "node --test tests/supabase-connection-tests.mjs",
-    "check:supabase": "node scripts/check-supabase.mjs"
+    "test:supabase": "node --test tests/supabase-connection-tests.mjs tests/supabase-boundary-tests.mjs",
+    "check:supabase": "node scripts/check-supabase.mjs",
+    "build:supabase": "node scripts/build-supabase.mjs",
+    "test:postgres": "TOP_HILLS_TEST_DATABASE=postgres node --test tests/finance-api-tests.mjs tests/laundry-api-tests.mjs tests/staff-auth-tests.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "drizzle-kit": "0.31.10",
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "postgres": "3.4.9"
   }
 }

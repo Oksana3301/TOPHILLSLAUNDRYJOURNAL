@@ -26,7 +26,7 @@
 - `dist/` contains authored frontend source and must remain tracked. Only generated `dist/server/`, `dist/.openai/`, and `.sites-runtime/` are ignored.
 - Keep source assets, vendor licenses, SOP originals, requirements, and design references in the repository.
 - Preserve `.openai/hosting.json` and the existing Site identity. Pushing to GitHub does not deploy the Site or change its audience.
-- The current backend uses Cloudflare D1 and R2. Supabase Auth has an adapter but needs configuration; the full PostgreSQL/Storage migration remains pending. See `docs/supabase/MIGRATION-HANDOFF.md`.
+- The Site selects one data backend through runtime DATA_BACKEND. The Supabase Edge backend supports PostgreSQL, private Storage and Auth; D1/R2 is retained for the controlled migration and rollback. Check `docs/supabase/MIGRATION-HANDOFF.md` for the recorded cutover status. Never silently fall back after Supabase activation.
 - Do not reset production data, run business-data migrations, activate payments, or deploy unless included in the user's request.
 - Use Node.js 24 (the tests use `node:sqlite`). Existing checks are documented in `README.md`.
 

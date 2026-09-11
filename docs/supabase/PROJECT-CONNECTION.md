@@ -1,5 +1,7 @@
 # Koneksi proyek Supabase Top Hills
 
+**Pembaruan 11 September 2026:** akses SQL melalui plugin sudah tersedia. Proyek aktif sehat, 18 tabel dibuat dengan RLS, bucket bukti privat tersedia, dan health check backend PostgreSQL menerima HTTP 200. Status pemindahan data dan aktivasi website berada di [handoff migrasi](MIGRATION-HANDOFF.md). Pemeriksaan awal di bawah merupakan riwayat sebelum skema dibuat.
+
 Pemeriksaan 11 September 2026. Repository: `Oksana3301/TOPHILLSLAUNDRYJOURNAL`.
 
 ## Tujuan yang terverifikasi
@@ -44,7 +46,7 @@ Script tersebut:
 
 ## Langkah SQL yang masih diperlukan
 
-Project API key mengakses layanan data proyek. Management API menggunakan access token atau OAuth tersendiri. Pada sesi pemeriksaan, operasi SQL Supabase belum tersedia melalui plugin, sehingga belum ada migrasi skema yang dijalankan.
+Project API key mengakses layanan data proyek. Management API menggunakan access token atau OAuth tersendiri. Pada pemeriksaan awal operasi SQL belum tersedia. Akses ini kini berhasil dan migrasi skema telah dicatat; tidak perlu meminta key pengelolaan tambahan.
 
 Buka SQL Editor proyek `dkiqgwziefazwrcieavq`, buat query baru, dan jalankan [INSPECT-PROJECT.sql](INSPECT-PROJECT.sql). Query ini hanya menampilkan nama skema/tabel, status RLS, dan hak SELECT; tidak membaca isi data pelanggan atau mengubah apa pun. Hasilnya diperlukan untuk memastikan kondisi database sebelum menyusun perubahan skema dan adapter.
 
