@@ -77,7 +77,7 @@ Saat berpindah host, jangan mempercayai header `oai-authenticated-user-*` dari i
 
 ## Status pengujian dan kesiapan
 
-Source runtime Supabase lolos seluruh suite Node.js 24, termasuk 62 skenario API terhadap PostgreSQL lokal dan 15 pemeriksaan koneksi/batas backend. Penyimpanan privat dan API runtime sudah diperiksa. Belum dilakukan pengujian ponsel/kamera nyata, email Supabase nyata, QRIS atau WhatsApp provider. Audit SOP awal: 18 skenario inti tersedia, 8 sebagian, 2 integrasi belum aktif. Ini belum pernyataan siap operasional penuh.
+Source runtime Supabase lolos seluruh suite Node.js 24, termasuk 71 skenario API terhadap PostgreSQL lokal dan 15 pemeriksaan koneksi/batas backend. Penyimpanan privat dan API runtime sudah diperiksa. Belum dilakukan pengujian ponsel/kamera nyata, email Supabase nyata, QRIS atau WhatsApp provider. Audit SOP awal: 18 skenario inti tersedia, 8 sebagian, 2 integrasi belum aktif. Ini belum pernyataan siap operasional penuh.
 
 Migrasi mempertahankan data, ID akun, revisi dan histori. Backup penuh disimpan secara privat; repo publik tidak menyimpan data usaha. Sumber D1/R2 tidak dihapus. Setelah ada penulisan baru di Supabase, pemulihan harus merekonsiliasi perubahan tersebut.
 

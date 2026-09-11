@@ -1,7 +1,7 @@
 import {proxySupabase} from './supabase-proxy.mjs';
 import {migrationExport} from './migration-export.mjs';
 import {laundryDemoRoute} from './laundry-demo-api.mjs';
-import { resolveStaffIdentity,staffAuthRoute } from './staff-auth.mjs';
+import { resolveStaffIdentity,staffAuthRoute,authErrorResponse } from './staff-auth.mjs';
 import { importLaundryFinance } from './laundry-finance.mjs';
 import { laundryRoute } from './laundry-api.mjs';
 import F from '../dist/finance-core.js';
@@ -92,4 +92,4 @@ export async function route(req,env){const u=new URL(req.url),path=u.pathname;if
  else throw new AppError('Endpoint tidak ditemukan.',404);
  const result=await save(env,w,old,m,action,objectId,p.mutationId);return json({...result,objectId});
 }
-export default {async scheduled(event,env,ctx){ctx.waitUntil(runScheduled(env).catch(e=>{console.error('Draft schedule failed',e.message);throw e;}));},async fetch(req,env){try{return await route(req,env)}catch(e){if(!e.status)console.error('Top Hills request failed',e.message);return json({error:e.status?e.message:'Penyimpanan belum dapat menyelesaikan permintaan. Input tetap tersedia; coba kembali.',detail:e.status?undefined:undefined},e.status||503)}}};
+export default {async scheduled(event,env,ctx){ctx.waitUntil(runScheduled(env).catch(e=>{console.error('Draft schedule failed',e.message);throw e;}));},async fetch(req,env){try{return await route(req,env)}catch(e){const authFailure=authErrorResponse(e);if(authFailure)return authFailure;if(!e.status)console.error('Top Hills request failed',e.message);return json({error:e.status?e.message:'Penyimpanan belum dapat menyelesaikan permintaan. Input tetap tersedia; coba kembali.',detail:e.status?undefined:undefined},e.status||503)}}};

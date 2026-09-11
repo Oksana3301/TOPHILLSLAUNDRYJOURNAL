@@ -33,6 +33,10 @@ export async function proxySupabase(req, env, pathOverride) {
       console.error('Top Hills backend refused an upstream redirect');
       return fail();
     }
+    const authCode = response.headers.get('X-Top-Hills-Auth-Code');
+    if (response.status >= 400 && path.startsWith('/api/auth/') && /^[a-z_]{1,64}$/.test(authCode || '')) {
+      console.warn('Top Hills authentication rejected', JSON.stringify({path: new URL(path, origin).pathname, status: response.status, code: authCode}));
+    }
     const outputHeaders = new Headers(response.headers);
     // Internal transport credentials must never reach a client, even on errors.
     for (const name of [...outputHeaders.keys()]) if (/^x-top-hills-|^authorization$|^apikey$/i.test(name)) outputHeaders.delete(name);

@@ -18,10 +18,26 @@ Deploy the saved version after changing environment values. The activation check
 
 ## Supabase dashboard configuration
 
+### Registration throttling and new devices
+
+The live registration investigation on 11 September 2026 found HTTP 429 responses from `/api/auth/signup` while the application attempt counters were below their limits. The old wrapper discarded Supabase's specific error code. It therefore could not distinguish the provider's email quota from an IP/request limit. Do not diagnose a device problem from that old generic message.
+
+The application now preserves allowlisted error codes and a valid `Retry-After`, with separate messages for email delivery limits, request throttling, email sender configuration, existing accounts and password requirements. The Sites proxy logs only operation, HTTP status and safe error code; it never logs credentials, email addresses or request bodies. No production rate limit or email-confirmation requirement was disabled.
+
+Supabase's built-in email service currently allows only two messages per hour **per project**, and only to organization team addresses. A new device does not reset that quota. Check [SMTP settings](https://supabase.com/dashboard/project/dkiqgwziefazwrcieavq/auth/smtp) and [Auth rate limits](https://supabase.com/dashboard/project/dkiqgwziefazwrcieavq/auth/rate-limits). Custom SMTP configuration cannot be read or changed through the Supabase tools exposed in this session, and its current values have not been verified. Never infer an exact remaining cooldown when the provider does not return one.
+
+Use **Masuk**, with the same identity/provider, to use an existing Owner account on another device. A different email is a separate account: after verification/login it appears under **Akses akun**, where an existing Owner can assign **Owner / Aktif**. Requested Owner in signup metadata is never an access grant.
+
+Signup now returns to the confirmation step with the email retained and supports instructions for either an email link or a code. A provider-verified signup response starts the normal pending account/session instead of incorrectly asking the user to wait for an email that was not sent. Provider tokens in confirmation URL fragments are discarded; actual sign-in still verifies credentials on the server.
+
+New tests cover two fresh devices sharing a provider email limit, successful verified signup and independent device sessions, pending Owner authorization, unconfirmed responses, existing-account/password/setup errors, per-email throttling and redaction of unknown provider errors. All use isolated SQLite/PostgreSQL fixtures and fake provider responses; they do not prove real email delivery.
+
+### Required email settings
+
 1. Enable email/password and require email confirmation.
 2. Set Site URL to `https://top-hills-co-journal.atikadewi.chatgpt.site/login`.
 3. Configure custom SMTP for staff email delivery. The default Supabase sender is only suitable for limited testing.
-4. The Top Hills UI uses explicit email codes. In both Confirm signup and Reset password email templates, display `{{ .Token }}` clearly, with instructions to enter the code at the Top Hills login page. Do not rely on an implicit access-token hash callback, which this integration does not consume.
+4. Signup can be confirmed through the email link, followed by password login at Top Hills. The UI also accepts explicit confirmation codes. For code-based signup and password recovery, display `{{ .Token }}` clearly in the Confirm signup and Reset password email templates. This integration does not consume implicit access-token callbacks. New Free projects using default SMTP cannot customize templates; configure custom SMTP first.
 5. Check provider password policies and rate limits. Top Hills enforces 12–128 characters for new passwords and server-side attempt limits.
 6. Test signup → code confirmation → pending approval → Owner activation → login from two devices → revoke one → reset password → all previous sessions rejected. Use test identities and no real payments.
 
@@ -51,8 +67,11 @@ Desk polling avoids overlapping loads, fetches room catalog at most once per min
 
 ## Validation and remaining checks
 
-Thirteen authentication tests run against both SQLite and local PostgreSQL with a mocked Supabase provider for cookie flags, encrypted token persistence, pending Owner requests, two-device sessions, targeted/global revocation, idle timeout, refresh, CSRF, attempt limits and unconfirmed-email rejection. Existing finance/access/workflow regression tests pass. The published authentication configuration responds normally and unauthenticated staff access is rejected. These are not a real Supabase delivery/login test, a penetration test, or mobile browser QA. Check the actual Auth settings and email-code delivery before relying on email sign-in for operations.
+Twenty-two authentication tests cover SQLite and local PostgreSQL with a mocked Supabase provider for signup/error handling, cookie flags, encrypted token persistence, pending Owner requests, two-device sessions, targeted/global revocation, idle timeout, refresh, CSRF, attempt limits and unconfirmed-email rejection. Existing finance/access/workflow regression tests pass. The published authentication configuration responds normally and unauthenticated staff access is rejected. These are not a real Supabase delivery/login test, a penetration test, or mobile browser QA. Check the actual Auth settings and email-code delivery before relying on email sign-in for operations.
 
 Official references:
 - https://supabase.com/docs/guides/auth/passwords
 - https://supabase.com/docs/guides/auth/server-side/advanced-guide
+- https://supabase.com/docs/guides/auth/rate-limits
+- https://supabase.com/docs/guides/auth/auth-smtp
+- https://supabase.com/changelog/46599-changes-to-email-template-customisation-on-free-tier

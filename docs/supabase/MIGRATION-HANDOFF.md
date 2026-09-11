@@ -8,7 +8,7 @@ The protected Edge API is deployed and its database health check returns HTTP 20
 All 18 PostgreSQL application tables exist with RLS enabled; browser roles have no direct grants.
 The private bucket `top-hills-evidence` exists (10 MiB limit). Complete source export and import have been verified across all 18 tables, including every field fingerprint, original ID, revision and owner record. A private full backup is retained. The source object inventory is empty.
 
-Site version 11 is published with `DATA_BACKEND=supabase`. Its public authentication configuration responds HTTP 200, and protected staff APIs reject unauthenticated access. A server-authenticated, read-only request using the preserved Owner identity returns a valid laundry summary from the deployed PostgreSQL backend. This service check is not a real browser login. The training routes and temporary export access are closed.
+The Site is published with `DATA_BACKEND=supabase`. At activation in version 11, its public authentication configuration responded HTTP 200, and protected staff APIs rejected unauthenticated access. A server-authenticated, read-only request using the preserved Owner identity returned a valid laundry summary from the deployed PostgreSQL backend. This service check was not a real browser login. The training routes and temporary export access are closed. Subsequent signup throttling and account-flow fixes are documented in `AUTH-SETUP.md`; database connectivity alone does not establish email registration readiness.
 
 ## Architecture
 
@@ -62,7 +62,7 @@ There is no automatic fallback to D1/R2. Those sources remain untouched for roll
 - A real temporary Storage probe verified upload, private read, listing and deletion; unauthenticated public access was denied. Probe objects and the temporary probe endpoint were removed.
 - The initial Site-to-Edge proxy returned HTTP 503. Version 11 strips transport/platform headers and handles upstream redirects explicitly; live requests now reach the application. No data re-import was needed.
 
-Runtime source: GitHub `47562a88fa2c72dc11857bbf697133f1418f0072`, Sites merge `7a81359796de54ff2f812e1f1badf6fcc2bfa47e`. [Node.js 24 CI passed](https://github.com/Oksana3301/TOPHILLSLAUNDRYJOURNAL/actions/runs/34600941759). Later documentation commits do not deploy a new runtime.
+Migration activation source (version 11): GitHub `47562a88fa2c72dc11857bbf697133f1418f0072`, Sites merge `7a81359796de54ff2f812e1f1badf6fcc2bfa47e`. [Node.js 24 CI passed](https://github.com/Oksana3301/TOPHILLSLAUNDRYJOURNAL/actions/runs/34600941759). Documentation commits alone do not deploy a new runtime.
 
 Actual email delivery, real user login and independent money reconciliation require the real account holders. QRIS payment-provider integration is separate and must never fabricate a successful payment.
 
