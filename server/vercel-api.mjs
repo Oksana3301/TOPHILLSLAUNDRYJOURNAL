@@ -78,7 +78,9 @@ export async function handleVercelApi(request, env, proxy = proxySupabase) {
   if (cookie) headers.set('Cookie', cookie);
   // This field is set by Vercel's edge, not by the application client.
   const ip = (request.headers.get('x-vercel-forwarded-for') || '').split(',')[0].trim();
-  if (isIP(ip)) headers.set('CF-Connecting-IP', ip);
+  // Cloudflare rejects its reserved IP header on external requests to Supabase.
+  // Carry the validated edge IP as authenticated metadata; the gateway restores it internally.
+  if (isIP(ip)) headers.set('X-Top-Hills-Client-IP', ip);
   try {
     const body = request.method === 'POST' ? await readBody(request) : undefined;
     if (body === null) return json({error: 'Unggahan terlalu besar. Pilih file maksimal 4 MB.'}, 413);

@@ -6,6 +6,18 @@ function equalHash(actual, expected) {
   for (let i = 0; i < actual.length; i++) diff |= actual.charCodeAt(i) ^ expected.charCodeAt(i);
   return diff === 0;
 }
+// Portable in both the Sites Worker and Supabase; no Node-specific imports.
+function validClientIp(value) {
+  if (!value || value.length > 45) return false;
+  if (value.includes(':')) {
+    if (!/^[0-9a-f:.]+$/i.test(value)) return false;
+    try { return new URL('http://[' + value + ']/').hostname.startsWith('['); }
+    catch { return false; }
+  }
+  const parts = value.split('.');
+  return parts.length === 4 && parts.every(part =>
+    /^(0|[1-9][0-9]{0,2})$/.test(part) && Number(part) <= 255);
+}
 export async function backendRequest(req, {tokenHash, origin, clients = []}) {
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer /, '');
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
@@ -26,10 +38,16 @@ export async function backendRequest(req, {tokenHash, origin, clients = []}) {
   if (url.origin !== sourceOrigin || !url.pathname.startsWith('/api/')) return null;
   const internal = sites && req.headers.get('X-Top-Hills-Internal') === 'scheduled';
   const headers = new Headers(req.headers), customer = headers.get('X-Top-Hills-Customer-Authorization');
+  // Read client IP metadata only after the origin, token and session key are authenticated.
+  const clientIp = client ? headers.get('X-Top-Hills-Client-IP') : null;
   for (const name of [...headers.keys()]) {
     if (/^x-top-hills-|^authorization$|^apikey$/i.test(name) && name.toLowerCase() !== 'x-top-hills') headers.delete(name);
     // Only the authenticated Sites gateway may assert a ChatGPT identity.
     if (!sites && /^oai-|^signature(?:-|$)/i.test(name)) headers.delete(name);
+  }
+  if (client) {
+    headers.delete('CF-Connecting-IP');
+    if (validClientIp(clientIp)) headers.set('CF-Connecting-IP', clientIp);
   }
   if (customer) headers.set('Authorization', customer);
   return {request: new Request(url, {method: req.method, headers, body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body, duplex: 'half'}), sessionKey: key, internal};

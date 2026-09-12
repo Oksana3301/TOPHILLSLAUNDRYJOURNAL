@@ -40,7 +40,10 @@ if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production' && !pr
     }
     if (Object.values(checks).every(Boolean)) {
       const {handleVercelApi} = await import('../server/vercel-api.mjs');
-      const response = await handleVercelApi(new Request(origin + '/api/auth/config'), process.env);
+      // Include a synthetic edge IP so this read-only probe exercises the public request transport.
+      const response = await handleVercelApi(new Request(origin + '/api/auth/config', {
+        headers: {'x-vercel-forwarded-for': '203.0.113.4'}
+      }), process.env);
       let enabled = false, chatgptEnabled = false;
       if (response.ok) {
         const config = await response.json();

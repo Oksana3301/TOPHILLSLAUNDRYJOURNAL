@@ -60,6 +60,7 @@ test('Adapter forwards customer auth and its cookie, strips forged identity and 
     Authorization: 'Bearer customer-capability', Cookie: '__Host-th-session=' + 'e'.repeat(64) + '; unrelated=private',
     'oai-authenticated-user-id': 'owner', 'X-Top-Hills-Internal': 'scheduled',
     'X-Top-Hills-Source-Origin': sites, 'CF-Connecting-IP': '198.51.100.9',
+    'X-Top-Hills-Client-IP': '198.51.100.8',
     'x-vercel-forwarded-for': '203.0.113.4'
   }), env, async req => {captured = req;return Response.json({saved: true});});
   assert.equal(response.status, 200);
@@ -68,7 +69,8 @@ test('Adapter forwards customer auth and its cookie, strips forged identity and 
   assert.equal(captured.headers.get('oai-authenticated-user-id'), null);
   assert.equal(captured.headers.get('X-Top-Hills-Internal'), null);
   assert.equal(captured.headers.get('X-Top-Hills-Source-Origin'), null);
-  assert.equal(captured.headers.get('CF-Connecting-IP'), '203.0.113.4');
+  assert.equal(captured.headers.get('CF-Connecting-IP'), null);
+  assert.equal(captured.headers.get('X-Top-Hills-Client-IP'), '203.0.113.4');
   assert(!captured.headers.get('Cookie').includes('unrelated'));
   assert.deepEqual(await captured.json(), {revision: 1});
 });
@@ -221,4 +223,46 @@ test('Vercel always uses the verified Top Hills project even when the host setti
     assert.equal(response.status, 503);
   }
   assert.equal(calls, 4, 'Missing credentials and preview must not reach the backend');
+});
+
+test('Public login transport avoids reserved Cloudflare headers and restores only the trusted edge IP', async t => {
+  let expectedIp;
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(options.headers.get('CF-Connecting-IP'), null,
+      'External requests carrying this reserved header can be rejected before reaching Supabase');
+    assert.equal(options.headers.get('X-Top-Hills-Client-IP'), expectedIp);
+    const restored = await backendRequest(new Request(url, options), gateway);
+    assert(restored);
+    assert.equal(restored.request.headers.get('CF-Connecting-IP'), expectedIp);
+    assert.equal(restored.request.headers.get('X-Top-Hills-Client-IP'), null);
+    return Response.json({enabled: true});
+  });
+  for (const edgeIp of ['203.0.113.4', '2001:db8::4', '', 'not-an-ip']) {
+    expectedIp = edgeIp && edgeIp !== 'not-an-ip' ? edgeIp : null;
+    const response = await handleVercelApi(request('auth/config', undefined, {
+      'x-vercel-forwarded-for': edgeIp,
+      'CF-Connecting-IP': '198.51.100.9',
+      'X-Top-Hills-Client-IP': '198.51.100.8'
+    }), env);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).enabled, true);
+  }
+});
+test('Gateway rejects malformed client IP metadata and keeps the Sites IP behavior', async () => {
+  for (const ip of ['', 'not-an-ip', '999.1.1.1', '127.1', '1.2.3.04',
+    '::invalid', '2001:db8::1,198.51.100.9', 'fe80::1%eth0']) {
+    const restored = await backendRequest(transport(origin, token, sessionKey, {
+      'CF-Connecting-IP': '198.51.100.9', 'X-Top-Hills-Client-IP': ip
+    }), gateway);
+    assert.equal(restored.request.headers.get('CF-Connecting-IP'), null, ip);
+    assert.equal(restored.request.headers.get('X-Top-Hills-Client-IP'), null);
+  }
+  const restored = await backendRequest(transport(sites, oldToken, 'd'.repeat(64), {
+    'CF-Connecting-IP': '198.51.100.9', 'X-Top-Hills-Client-IP': '203.0.113.4'
+  }), gateway);
+  assert.equal(restored.request.headers.get('CF-Connecting-IP'), '198.51.100.9');
+  assert.equal(restored.request.headers.get('X-Top-Hills-Client-IP'), null);
+  assert.equal(await backendRequest(transport(origin, oldToken, sessionKey, {
+    'X-Top-Hills-Client-IP': '203.0.113.4'
+  }), gateway), null);
 });
