@@ -33,3 +33,5 @@ for (const entry of ['index.html', 'staff-login.html', 'laundry-desk.html', 'por
   await access(path.join(output, entry));
 }
 console.log('Prepared Vercel public assets and page routes. Backend migration is separate.');
+
+await import('./check-vercel-backend.mjs');
