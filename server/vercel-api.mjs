@@ -91,12 +91,11 @@ export async function handleVercelApi(request, env, proxy = proxySupabase) {
       const config = await upstream.json();
       return json({...config, chatgptEnabled: false, maxUploadBytes: 4000000});
     }
-    if (upstream.status === 401 && path.startsWith('/api/auth/')) {
-      // Auth endpoints also legitimately return 401 for incorrect credentials;
-      // retain the application's safe error rather than inventing a successful login.
-      return upstream;
-    }
-    return upstream;
+    // Node fetch decodes compressed upstream bodies but may retain their wire headers.
+    // Forward the decoded body with matching headers so errors, sessions and business JSON remain readable.
+    const responseHeaders = new Headers(upstream.headers);
+    for (const name of ['Content-Encoding', 'Content-Length', 'Transfer-Encoding']) responseHeaders.delete(name);
+    return new Response(upstream.body, {status: upstream.status, statusText: upstream.statusText, headers: responseHeaders});
   } catch {
     return json({error: 'Layanan belum merespons. Perubahan belum dikonfirmasi tersimpan.'}, 503);
   }

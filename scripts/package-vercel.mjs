@@ -19,7 +19,12 @@ async function copyPublic(directory, target) {
     if (info.isDirectory()) await copyPublic(from, to);
     else if (info.isFile()) {
       if (name.endsWith('.html')) {
-        const html = await readFile(from, 'utf8');
+        let html = await readFile(from, 'utf8');
+        if (from === path.join(source, 'staff-login.html')) {
+          // ChatGPT identity stays on its existing trusted Site; email accounts use a separate sign-in.
+          const ownerAccess = '<section class="card" aria-labelledby="chatgpt-access-title"><h2 id="chatgpt-access-title">Sudah punya akses lewat ChatGPT?</h2><p>Buka situs Top Hills sebelumnya dan masuk dengan akun ChatGPT yang sama. Akses Owner tetap mengikuti akun tersebut.</p><a class="button primary" href="https://top-hills-co-journal.atikadewi.chatgpt.site/login" target="_top">Buka login ChatGPT ↗</a><p class="muted">Formulir email di bawah menggunakan akun Top Hills yang didaftarkan terpisah.</p></section>';
+          html = html.replace('<div id="auth-message"', ownerAccess + '<div id="auth-message"');
+        }
         await writeFile(to, html.replace('</head>', '<script src="/host-config.js"></script></head>'));
       } else await cp(from, to);
     }

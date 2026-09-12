@@ -1,4 +1,7 @@
 import test from 'node:test';
+import {createServer} from 'node:http';
+import {gzipSync} from 'node:zlib';
+import {once} from 'node:events';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFile, mkdtemp, mkdir, cp, rm, stat} from 'node:fs/promises';
@@ -159,6 +162,10 @@ test('Browser scripts parse and packaged frontend hides unsupported ChatGPT logi
   for(const file of ['staff-login.js','upload.js','portal.js','cloud.js'])new Script(await readFile('dist/'+file,'utf8'));
   const html=await readFile('vercel-public/staff-login.html','utf8');
   assert(html.indexOf('/host-config.js')<html.indexOf('/staff-login.js'));
+  assert.match(html, /href="https:\/\/top-hills-co-journal\.atikadewi\.chatgpt\.site\/login" target="_top"/);
+  assert(html.indexOf('Buka login ChatGPT') < html.indexOf('id="auth-view"'));
+  assert(!((await readFile('dist/staff-login.html', 'utf8')).includes('chatgpt-access-title')),
+    'Vercel navigation must not replace the original Sites authentication flow');
   assert.match(await readFile('vercel-public/host-config.js','utf8'),/chatgptLogin: false/);
   await assert.rejects(stat('vercel-public/server'));
   await assert.rejects(stat('vercel-public/.openai'));
@@ -265,4 +272,40 @@ test('Gateway rejects malformed client IP metadata and keeps the Sites IP behavi
   assert.equal(await backendRequest(transport(origin, oldToken, sessionKey, {
     'X-Top-Hills-Client-IP': '203.0.113.4'
   }), gateway), null);
+});
+
+test('Compressed upstream errors and successful sessions remain readable through Vercel', async t => {
+  const nativeFetch = globalThis.fetch;
+  let status = 401, payload = {error: 'Email atau kata sandi belum cocok.', code: 'invalid_credentials'};
+  const upstream = createServer((req, res) => {
+    req.resume();
+    const body = gzipSync(JSON.stringify(payload));
+    res.writeHead(status, {
+      'Content-Type': 'application/json', 'Content-Encoding': 'gzip', 'Content-Length': body.length,
+      'Set-Cookie': '__Host-th-session=fictional-session; Secure; HttpOnly; Path=/',
+      'X-Top-Hills-Session-Key': sessionKey
+    });
+    res.end(body);
+  });
+  upstream.listen(0, '127.0.0.1');
+  await once(upstream, 'listening');
+  t.after(() => {upstream.closeAllConnections();return new Promise(resolve => upstream.close(resolve));});
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url, env.SUPABASE_URL + '/functions/v1/tophills-api');
+    return nativeFetch('http://127.0.0.1:' + upstream.address().port, options);
+  });
+  for (const responseStatus of [401, 200]) {
+    status = responseStatus;
+    if (status === 200) payload = {redirect: '/'};
+    const response = await handleVercelApi(request('auth/login', {
+      email: 'fictional@example.test', password: 'fictional-password'
+    }), env);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get('Content-Encoding'), null);
+    assert.equal(response.headers.get('Content-Length'), null);
+    assert.equal(response.headers.get('Transfer-Encoding'), null);
+    assert.equal(response.headers.get('X-Top-Hills-Session-Key'), null);
+    assert.match(response.headers.get('Set-Cookie'), /Secure; HttpOnly/);
+    assert.deepEqual(await response.json(), payload);
+  }
 });
