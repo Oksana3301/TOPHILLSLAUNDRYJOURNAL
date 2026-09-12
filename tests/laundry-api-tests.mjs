@@ -1,3 +1,4 @@
+import vm from 'node:vm';
 import test,{after} from 'node:test';import {createTestDatabase} from './database-fixture.mjs';import assert from 'node:assert/strict';import {readFileSync,readdirSync} from 'node:fs';import {laundryRoute,hash} from '../server/laundry-api.mjs';
 const {sql,DB,close}=await createTestDatabase();after(close);
 
@@ -32,7 +33,9 @@ test('Customer only reads own operational evidence, never bank or other-order pr
 test('Multiple packages survive API persistence, revision conflicts and customer approval after an operator exception',async()=>{
  const made=await call('laundry/assisted',{...data,roomId:'A01',serviceIds:['THL-regular-refresh','THL-bed-cover-l'],mutationId:crypto.randomUUID()},{user:'op'});
  assert.equal(made.status,200,JSON.stringify(made));let current=made.body.order;
- const key=new URLSearchParams(made.body.trackingPath.split('#')[1]).get('key');assert(key);
+ assert.equal(made.body.trackingPath,undefined);
+ const tracking=await call('laundry/tracking',{id:current.id},{user:'owner'});assert.equal(tracking.status,200);
+ const key=new URLSearchParams(tracking.body.trackingPath.split('#')[1]).get('key');assert(key);
  const f=new FormData();f.set('orderId',current.id);f.set('capture','live');f.set('file',new File([new Uint8Array([255,216,255,10])],'intake.jpg',{type:'image/jpeg'}));
  const proof=(await call('laundry/proof',f,{user:'op'})).body;
  const step=async(action,extra={},user='op')=>{const r=await call('laundry/action',{id:current.id,revision:current.revision,action,mutationId:crypto.randomUUID(),...extra},{user});assert.equal(r.status,200,JSON.stringify(r));current=r.body.order;};
@@ -50,4 +53,157 @@ test('Multiple packages survive API persistence, revision conflicts and customer
  assert.equal(approved.status,200,JSON.stringify(approved));assert.equal(approved.body.order.priceApproved,true);
  const saved=JSON.parse((await sql.prepare('SELECT data FROM laundry_orders WHERE id=?').get(current.id)).data);
  assert.equal(saved.status,'IN PROCESS');assert.equal(saved.priceApproval.via,'CUSTOMER PORTAL');assert.equal(saved.exceptions.find(e=>e.type==='PROCESS WITHOUT CUSTOMER APPROVAL').open,false);
+});
+
+test('Only Owner may issue a THL customer link; denied requests never rotate existing links',async()=>{
+ const made=await call('laundry/assisted',{...data,roomId:'A01',mutationId:crypto.randomUUID()},{user:'owner'});
+ assert.equal(made.status,200);const id=made.body.order.id,originalKey=new URLSearchParams(made.body.trackingPath.split('#')[1]).get('key');
+ const before=await sql.prepare('SELECT token_hash,data,revision FROM laundry_orders WHERE id=?').get(id);
+ const eventCount=(await sql.prepare("SELECT count(*) n FROM laundry_events WHERE order_id=? AND action='ROTATE TRACKING'").get(id)).n;
+ for(const user of ['op','finance']){
+  assert.equal((await call('laundry/tracking',{id},{user})).status,403);
+  assert.equal((await call('laundry/tracking',{id:'THL-NOT-FOUND'},{user})).status,403);
+ }
+ assert.equal((await call('laundry/tracking',{id},{user:null})).status,401);
+ assert.deepEqual(await sql.prepare('SELECT token_hash,data,revision FROM laundry_orders WHERE id=?').get(id),before);
+ assert.equal((await sql.prepare("SELECT count(*) n FROM laundry_events WHERE order_id=? AND action='ROTATE TRACKING'").get(id)).n,eventCount);
+ assert.equal((await call('portal/order?id='+id,null,{user:null,token:originalKey})).status,200);
+ const rotated=await call('laundry/tracking',{id},{user:'owner'});
+ assert.equal(rotated.status,200);const nextKey=new URLSearchParams(rotated.body.trackingPath.split('#')[1]).get('key');
+ assert.notEqual(nextKey,originalKey);
+ assert.equal((await call('portal/order?id='+id,null,{user:null,token:originalKey})).status,404);
+ assert.equal((await call('portal/order?id='+id,null,{user:null,token:nextKey})).status,200);
+ assert.equal((await sql.prepare("SELECT count(*) n FROM laundry_events WHERE order_id=? AND action='ROTATE TRACKING'").get(id)).n,eventCount+1);
+});
+
+test('Assisted responses reveal links only for Owner THL, never Operator, INT, or replay',async()=>{
+ for(const user of ['owner','op']){
+  for(const roomId of ['A01','UNKNOWN']){
+   const payload={...data,roomId,mutationId:crypto.randomUUID()};
+   const made=await call('laundry/assisted',payload,{user}),replay=await call('laundry/assisted',payload,{user});
+   assert.equal(made.status,200);assert.equal(replay.status,200);
+   assert.equal(made.body.order.id,replay.body.order.id);
+   assert.equal(Object.hasOwn(made.body,'trackingPath'),user==='owner'&&roomId==='A01');
+   assert.equal(Object.hasOwn(replay.body,'trackingPath'),false);
+   for(const response of [made,replay]){
+    assert.equal(Object.hasOwn(response.body.order,'token_hash'),false);
+    assert.equal(Object.hasOwn(response.body.order,'orderToken'),false);
+   }
+   if(roomId==='UNKNOWN'){
+    assert.equal(made.body.order.kind,'INT');
+    assert.equal((await call('laundry/tracking',{id:made.body.order.id},{user:'owner'})).status,400);
+   }
+  }
+ }
+});
+
+test('Customer portal blocks active staff impersonation; Owner preview is read-only and anonymous customers retain access',async()=>{
+ const made=await call('laundry/assisted',{...data,roomId:'A01',mutationId:crypto.randomUUID()},{user:'owner'});
+ let current=made.body.order;const key=new URLSearchParams(made.body.trackingPath.split('#')[1]).get('key');
+ const photo=()=>{const f=new FormData();f.set('orderId',current.id);f.set('capture','live');f.set('file',new File([new Uint8Array([255,216,255,10])],'fictitious-proof.jpg',{type:'image/jpeg'}));return f;};
+ const uploaded=await call('laundry/proof',photo(),{user:'op'});assert.equal(uploaded.status,200);
+ for(const [action,extra] of [['accept',{}],['receive',{proofId:uploaded.body.id,bags:1,location:'Rak uji'}]]){
+  const next=await call('laundry/action',{id:current.id,revision:current.revision,action,mutationId:crypto.randomUUID(),...extra},{user:'op'});
+  assert.equal(next.status,200);current=next.body.order;
+ }
+ const stored=await sql.prepare('SELECT data,revision FROM laundry_orders WHERE id=?').get(current.id),files=objects.size;
+ const confirmation={...data,id:current.id,revision:current.revision,action:'confirm-identity',mutationId:crypto.randomUUID()};
+ for(const user of ['op','finance']){
+  assert.equal((await call('portal/order?id='+current.id,null,{user,token:key})).status,403);
+  assert.equal((await call('portal/proof?orderId='+current.id+'&id='+uploaded.body.id,null,{user,token:key})).status,403);
+ }
+ for(const user of ['owner','op','finance']){
+  assert.equal((await call('portal/action',confirmation,{user,token:key})).status,403);
+  assert.equal((await call('portal/proof',photo(),{user,token:key})).status,403);
+ }
+ assert.deepEqual(await sql.prepare('SELECT data,revision FROM laundry_orders WHERE id=?').get(current.id),stored);
+ assert.equal(objects.size,files);
+ for(const user of ['owner',null]){
+  const preview=await call('portal/order?id='+current.id,null,{user,token:key});assert.equal(preview.status,200);assert.equal(preview.body.readOnly,user==='owner');
+  assert.equal((await call('portal/proof?orderId='+current.id+'&id='+uploaded.body.id,null,{user,token:key})).status,200);
+ }
+ const confirmed=await call('portal/action',confirmation,{user:null,token:key});
+ assert.equal(confirmed.status,200);assert.equal(confirmed.body.order.identity,'CONFIRMED');
+ for(const user of ['owner','op','finance'])assert.equal((await call('portal/action',confirmation,{user,token:key})).status,403);
+ const customerPhoto=await call('portal/proof',photo(),{user:null,token:key});
+ assert.equal(customerPhoto.status,200);assert.equal(customerPhoto.body.capture,'upload');
+});
+
+test('An old INT capability cannot open customer pages or create customer actions',async()=>{
+ const made=await call('laundry/assisted',{...data,roomId:'UNKNOWN',mutationId:crypto.randomUUID()},{user:'op'});
+ const id=made.body.order.id,legacyKey='d'.repeat(64);
+ await sql.prepare('UPDATE laundry_orders SET token_hash=? WHERE id=?').run(await hash(legacyKey),id);
+ assert.equal((await call('portal/order?id='+id,null,{user:null,token:legacyKey})).status,404);
+ assert.equal((await call('portal/order?id='+id,null,{user:'owner',token:legacyKey})).status,404);
+ assert.equal((await call('portal/action',{id,revision:1,action:'confirm-identity',mutationId:crypto.randomUUID(),...data},{user:null,token:legacyKey})).status,404);
+ assert.equal((await call('portal/proof?orderId='+id+'&id=missing',null,{user:null,token:legacyKey})).status,404);
+ assert.equal((await call('laundry/tracking',{id},{user:'owner'})).status,400);
+});
+
+test('Owner may append missing return evidence to a cancelled record with revision protection and an audit trail',async()=>{
+ const made=await call('laundry/assisted',{...data,roomId:'A01',mutationId:crypto.randomUUID()},{user:'owner'});
+ let current=made.body.order;
+ const form=new FormData();form.set('orderId',current.id);form.set('file',new File([new Uint8Array([255,216,255])],'return-proof.jpg'));
+ const proof=await call('laundry/proof',form);assert.equal(proof.status,200);
+ // Reproduce a legacy cancelled record in this isolated test database, never production.
+ current={...current,status:'CANCELLED',custody:false,label:false,intakeProof:proof.body.id,exceptions:[{id:'legacy-label',type:'RELABEL REQUIRED',open:true}]};
+ await sql.prepare('UPDATE laundry_orders SET status=?,data=? WHERE id=?').run(current.status,JSON.stringify(current),current.id);
+ const payload={id:current.id,revision:current.revision,action:'record-return-proof',proofId:proof.body.id,recipient:'Penerima fiktif',reason:'Melengkapi bukti pengembalian yang sudah dilakukan',mutationId:crypto.randomUUID()};
+ for(const user of ['op','finance'])assert.equal((await call('laundry/action',payload,{user})).status,403);
+ assert.equal((await call('laundry/action',{...payload,proofId:'missing'},{user:'owner'})).status,400);
+ const before=await sql.prepare('SELECT data,revision FROM laundry_orders WHERE id=?').get(current.id);
+ const saved=await call('laundry/action',payload,{user:'owner'});assert.equal(saved.status,200,JSON.stringify(saved));
+ assert.equal(saved.body.order.status,'CANCELLED');assert.equal(saved.body.order.custody,false);assert.equal(saved.body.order.label,false);
+ for(const field of ['pay','set','ref','exceptions'])assert.deepEqual(saved.body.order[field],current[field]);
+ assert.equal(saved.body.order.returnProof,proof.body.id);assert.equal(saved.body.order.returnEvidence.by,'owner');
+ assert.equal(saved.body.order.returnEvidence.at,undefined);assert(Number.isFinite(Date.parse(saved.body.order.returnEvidence.recordedAt)));
+ const retry=await call('laundry/action',payload,{user:'owner'});assert.equal(retry.status,200);assert.equal(retry.body.order.revision,before.revision+1);
+ assert.equal((await sql.prepare("SELECT count(*) n FROM laundry_events WHERE order_id=? AND action='record-return-proof'").get(current.id)).n,1);
+ assert.equal((await call('laundry/action',{...payload,mutationId:crypto.randomUUID(),revision:saved.body.order.revision},{user:'owner'})).status,400);
+ const resolved=await call('laundry/action',{id:current.id,revision:saved.body.order.revision,action:'resolve-exception',exceptionId:'legacy-label',proofId:proof.body.id,reason:'Barang sudah dikembalikan dan bukti diperiksa',mutationId:crypto.randomUUID()},{user:'owner'});
+ assert.equal(resolved.status,200);assert.equal(resolved.body.order.clear,'CANCELLED CLEAR');
+});
+
+function portalPreviewHarness(){
+ const nodes=new Map(),element=()=>({innerHTML:'',textContent:'',className:'',disabled:false,listeners:{},addEventListener(name,handler){this.listeners[name]=handler;}});
+ nodes.set('#view',element());nodes.set('#message',element());
+ const get=selector=>{
+  if(nodes.has(selector)&&['#view','#message'].includes(selector))return nodes.get(selector);
+  if(!nodes.get('#view').innerHTML.includes('id="'+selector.slice(1)+'"'))return null;
+  if(!nodes.has(selector))nodes.set(selector,element());return nodes.get(selector);
+ };
+ const context={console,document:{querySelector:get,querySelectorAll:()=>[]},URLSearchParams,AbortSignal,FormData,File,crypto,structuredClone,location:{hash:'#order=THL-PREVIEW&key='+ 'e'.repeat(64),href:'https://local.test/checkin'},navigator:{clipboard:{writeText:async()=>{}}}};
+ context.window=context;vm.createContext(context);
+ for(const file of ['copy.js','laundry-labels.js','services-core.js','laundry-ui.js'])vm.runInContext(readFileSync('dist/'+file,'utf8'),context);
+ const portal=readFileSync('dist/portal.js','utf8'),startup=portal.lastIndexOf('\n(async()=>{');assert(startup>0);
+ vm.runInContext(portal.slice(0,startup),context);
+ const fixture={id:'THL-PREVIEW',customer:{...data},room:{id:'A01',building:'A',floor:'1',roomType:'Kost'},status:'PRICE CONFIRMATION PENDING',identity:'PENDING',revision:1,customerRevision:1,acceptedRevision:1,acceptedName:'Petugas fiktif',price:{service:{id:'THL-regular-refresh',name:'Regular Refresh',unit:'Kg',price:6000},billedQuantity:2,total:12000},priceApproved:false,pay:{status:'UNPAID',received:0},ref:{status:'NONE'},proofs:[]};
+ const calls=[],h={context,fixture,calls,get,readOnly:true,ok:true,run:code=>vm.runInContext(code,context)};
+ context.fetch=async(url,options)=>{calls.push({url,options});return {ok:h.ok,json:async()=>h.ok?{order:structuredClone(fixture),...(h.readOnly===undefined?{}:{readOnly:h.readOnly})}:{error:'Tautan ini hanya untuk pelanggan.'}};};
+ return h;
+}
+test('Owner customer preview hides writes and refuses direct action calls in the UI',async()=>{
+ const h=portalPreviewHarness();await h.run('loadOrder()');const html=h.get('#view').innerHTML;
+ assert(html.includes('pemeriksaan Owner'));
+ for(const id of ['approve','confirm','reject','cancel','customer-photo','revise'])assert(!html.includes('id="'+id+'"'),id);
+ await h.run("action('approve-price')");
+ assert.equal(h.calls.filter(c=>c.options.method==='POST').length,0);
+ assert.equal(h.run('readOnly'),true);
+});
+test('Customer controls follow the latest access response and disappear immediately when access fails',async()=>{
+ const h=portalPreviewHarness();await h.run('loadOrder()');h.readOnly=false;await h.run('loadOrder()');
+ for(const id of ['approve','confirm','reject','cancel','customer-photo','revise'])assert(h.get('#view').innerHTML.includes('id="'+id+'"'),id);
+ assert.equal(h.run('readOnly'),false);
+ await h.run("action('approve-price')");assert.equal(h.calls.filter(c=>c.options.method==='POST').length,1);
+ h.ok=false;await h.run('loadOrder()');assert.equal(h.run('readOnly'),true);assert.equal(h.run('order'),null);
+ assert(!h.get('#view').innerHTML.includes('id="approve"'));
+ h.ok=true;h.readOnly=undefined;await h.run('loadOrder()');assert.equal(h.run('readOnly'),true);assert(!h.get('#view').innerHTML.includes('id="customer-photo"'));
+});
+test('A delayed customer response cannot restore write controls over a newer Owner preview',async()=>{
+ const h=portalPreviewHarness(),pending=[];
+ h.context.fetch=()=>new Promise(resolve=>pending.push(resolve));
+ const earlier=h.run('loadOrder()'),latest=h.run('loadOrder()');
+ pending[1]({ok:true,json:async()=>({order:structuredClone(h.fixture),readOnly:true})});await latest;
+ pending[0]({ok:true,json:async()=>({order:structuredClone(h.fixture),readOnly:false})});await earlier;
+ assert.equal(h.run('readOnly'),true);assert(!h.get('#view').innerHTML.includes('id="approve"'));
 });

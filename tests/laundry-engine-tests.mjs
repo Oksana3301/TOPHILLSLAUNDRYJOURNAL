@@ -36,3 +36,46 @@ test('Gallery proof cannot substitute live intake',()=>{assert.throws(()=>act(ac
 test('Customer cannot set payment/status or act as staff',()=>{assert.throws(()=>act(create(),'verify-pay',{amount:12000},customer),/pelanggan/);assert.throws(()=>act(create(),'accept',{},customer));});
 test('QRIS unavailable without connected provider; no fake production success',()=>{assert.throws(()=>act(priced(),'create-pay',{method:'QRIS Demo'}),/belum terhubung/);});
 test('Underpayment requires new attempt and never overwrites initial receipt',()=>{const o=act(act(priced(),'create-pay',{method:'Cash'}),'verify-pay',{proofId:'photo',amount:5000});assert.equal(o.pay.status,'UNDERPAID');assert.throws(()=>act(o,'verify-pay',{proofId:'photo',amount:7000}),/attempt/);const a=act(act(o,'create-pay',{method:'Cash'}),'verify-pay',{proofId:'photo',amount:7000});assert.equal(a.pay.status,'PAID');assert.deepEqual(a.pay.attempts.map(x=>x.received),[5000,7000]);});
+
+const cancelledMissingReturn=(base=received())=>{
+ const cancelled=act(act(base,'cancel',{reason:'Pembatalan fiktif'},customer),'return',{proofId:'photo',recipient:'Penerima fiktif'});
+ delete cancelled.returnProof;cancelled.label=false;
+ cancelled.exceptions.push({id:'missing-return-label',type:'RELABEL REQUIRED',open:true});
+ return cancelled;
+};
+test('Missing return evidence is appended by Owner without rewriting the physical return or financial history',()=>{
+ const original=cancelledMissingReturn(paid()),snapshot=structuredClone(original);
+ const saved=act(original,'record-return-proof',{proofId:'upload',recipient:'Penerima fiktif',reason:'Bukti lama diperiksa dan dilengkapi'},owner);
+ assert.deepEqual(original,snapshot);
+ for(const field of ['status','custody','label','pay','set','ref','exceptions','receivedAt','receivedBy'])assert.deepEqual(saved[field],original[field]);
+ assert.equal(saved.returnProof,'upload');
+ assert.deepEqual(saved.returnEvidence,{recipient:'Penerima fiktif',by:owner.id,name:owner.name,recordedAt:at,reason:'Bukti lama diperiksa dan dilengkapi'});
+ assert.equal(saved.returnEvidence.at,undefined);
+ assert.equal(clearState(saved),'OPEN');
+});
+test('Missing return evidence cannot bypass role, custody, order state, or evidence requirements',()=>{
+ const original=cancelledMissingReturn(),payload={proofId:'upload',recipient:'Penerima fiktif',reason:'Bukti lama diperiksa dan dilengkapi'};
+ for(const actor of [op,finance,customer])assert.throws(()=>act(original,'record-return-proof',payload,actor),error=>error.status===403);
+ for(const changed of [
+  {...original,status:'RETURN REQUESTED'},
+  {...original,status:'COMPLETED'},
+  {...original,custody:true},
+  {...original,kind:'INT'},
+  {...original,intakeProof:null},
+  {...original,returnProof:'photo'},
+  {...original,exceptions:[]},
+  {...original,exceptions:[{id:'closed',type:'RELABEL REQUIRED',open:false}]}
+ ])assert.throws(()=>act(changed,'record-return-proof',payload,owner));
+ for(const changed of [{...payload,proofId:'missing'},{...payload,recipient:''},{...payload,reason:''}])assert.throws(()=>act(original,'record-return-proof',changed,owner));
+ assert.throws(()=>transition(original,'record-return-proof',payload,owner,[{id:'upload',order_id:'ANOTHER-ORDER',capture:'upload'}],at));
+});
+test('Appending return proof leaves exceptions open until the Owner checks and resolves each one',()=>{
+ const original=cancelledMissingReturn();
+ assert.throws(()=>act(original,'resolve-exception',{exceptionId:'missing-return-label',proofId:'upload',reason:'Barang sudah keluar'},owner),/Label/);
+ const saved=act(original,'record-return-proof',{proofId:'upload',recipient:'Penerima fiktif',reason:'Bukti pengembalian sudah diperiksa'},owner);
+ assert.equal(saved.exceptions.find(e=>e.id==='missing-return-label').open,true);
+ assert.equal(clearState(saved),'OPEN');
+ const resolved=act(saved,'resolve-exception',{exceptionId:'missing-return-label',proofId:'upload',reason:'Pengembalian barang sudah dibuktikan'},owner);
+ assert.equal(clearState(resolved),'CANCELLED CLEAR');
+ assert.equal(resolved.status,'CANCELLED');assert.equal(resolved.custody,false);assert.equal(resolved.label,false);
+});
