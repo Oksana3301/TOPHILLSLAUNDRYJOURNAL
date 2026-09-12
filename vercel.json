@@ -1,0 +1,47 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build && node scripts/package-vercel.mjs",
+  "outputDirectory": "vercel-public",
+  "rewrites": [
+    {
+      "source": "/login",
+      "destination": "/staff-login.html"
+    },
+    {
+      "source": "/laundry-desk",
+      "destination": "/laundry-desk.html"
+    },
+    {
+      "source": "/checkin",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/sop-coverage",
+      "destination": "/sop-coverage.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'self' blob:; base-uri 'self'; form-action 'self'"
+        }
+      ]
+    }
+  ]
+}

@@ -39,6 +39,9 @@ jobs:
         id: build
         run: npm run build
 
+      - name: Prepare Vercel public assets
+        run: node scripts/package-vercel.mjs
+
       # Run every test group after a successful build, even if another group fails.
       # Failed test steps still cause the overall job to fail.
       - name: Test finance, services, UI, core, and access

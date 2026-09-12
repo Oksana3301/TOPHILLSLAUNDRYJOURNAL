@@ -1,0 +1,29 @@
+import {cp, lstat, mkdir, readdir, rm, access} from 'node:fs/promises';
+import path from 'node:path';
+
+const source = path.resolve('dist');
+const output = path.resolve('vercel-public');
+const disabledTraining = new Set(['demo.html', 'demo.js', 'sop-demo.html', 'sop-demo.js']);
+
+// dist contains both authored public assets and generated Sites server output.
+// Copy only public assets; never publish the Worker bundle or hosting metadata.
+async function copyPublic(directory, target) {
+  await mkdir(target, {recursive: true});
+  for (const name of await readdir(directory)) {
+    if (name.startsWith('.') || name === 'server' || disabledTraining.has(name)) continue;
+    const from = path.join(directory, name);
+    const to = path.join(target, name);
+    const info = await lstat(from);
+    if (info.isSymbolicLink()) throw new Error('Public build must not contain symbolic links');
+    if (info.isDirectory()) await copyPublic(from, to);
+    else if (info.isFile()) await cp(from, to);
+  }
+}
+
+await access(path.join(source, 'index.html'));
+await rm(output, {recursive: true, force: true});
+await copyPublic(source, output);
+for (const entry of ['index.html', 'staff-login.html', 'laundry-desk.html', 'portal.html', 'sop-coverage.html']) {
+  await access(path.join(output, entry));
+}
+console.log('Prepared Vercel public assets and page routes. Backend migration is separate.');

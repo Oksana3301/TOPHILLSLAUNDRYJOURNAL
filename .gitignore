@@ -28,3 +28,7 @@ coverage/
 .DS_Store
 exports/
 backups/
+
+# Generated Vercel deployment output
+vercel-public/
+.vercel/
