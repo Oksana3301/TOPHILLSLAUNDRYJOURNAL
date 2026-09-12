@@ -1,5 +1,11 @@
 {
   "origin": "https://top-hills-co-journal.atikadewi.chatgpt.site",
   "tokenHash": "f243bc7faac91d6b8a30db254b6be4068bcb42256cffda6c0128d07a17b0b162",
-  "clients": []
+  "clients": [
+    {
+      "origin": "https://tophillslaundryjournal.vercel.app",
+      "tokenHash": "4ba4aadbdffd0bf9a5872614a9388943c1f2dbbdbd9036ea0f70e6a6c4424762",
+      "sessionKeyHash": "e83d06ee64f8c8f65cd39be0b7e1e9741a24a4ff66d77d4099549812dd1477c7"
+    }
+  ]
 }
