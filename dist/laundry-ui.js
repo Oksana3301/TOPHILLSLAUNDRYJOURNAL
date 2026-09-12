@@ -67,7 +67,8 @@ function guidance(o){
  if(o.status==='CANCEL REQUESTED')return {title:'Pembatalan perlu diperiksa',text:'Periksa pekerjaan yang sudah berjalan dan putuskan pembatalan sebelum melanjutkan.',tone:'danger',primary:'approve-cancel'};
  if(o.status==='RETURN REQUESTED')return {title:'Kembalikan barang pelanggan',text:'Catat penerima dan bukti pengembalian. Periksa pengembalian dana bila sudah ada pembayaran.',tone:'warning',primary:'return'};
  if(o.status==='COMPLETED')return {title:o.clear==='CLEAR'?'Selesai dan sudah cocok':'Barang sudah diserahkan',text:o.clear==='CLEAR'?'Seluruh proses dan pencocokan dana selesai.':'Periksa pembayaran, setoran, atau kendala yang masih terbuka.',tone:o.clear==='CLEAR'?'success':'warning',primary:'submit-set'};
- if(['CANCELLED','VOIDED','LINKED'].includes(o.status))return {title:root.THLaundryLabel(o.status),text:'Riwayat order tetap tersimpan. Periksa pengembalian dana atau setoran bila masih terbuka.',tone:'warning'};
+ if(o.status==='LINKED')return {title:'Pencatatan barang sudah selesai',text:'Buka pesanan yang terhubung untuk melanjutkan. Catatan awal tetap tersimpan.',tone:'success'};
+ if(['CANCELLED','VOIDED'].includes(o.status))return {title:root.THLaundryLabel(o.status),text:'Riwayat order tetap tersimpan. Periksa pengembalian dana atau setoran bila masih terbuka.',tone:'warning'};
  if(o.status==='ON HOLD')return {title:'Order sedang ditahan',text:'Selesaikan kendala lalu lanjutkan tahap sebelumnya.',tone:'danger',primary:'resume'};
  if(o.identity==='UNIDENTIFIED'||o.kind==='INT')return {title:'Identifikasi barang terlebih dahulu',text:'Barang tetap di karantina. Owner perlu memverifikasi pemilik dan kamar.',tone:'danger'};
  if(o.acceptedRevision<o.customerRevision)return {title:'Terima pesanan atau revisi terbaru',text:'Periksa paket, kamar, dan instruksi pelanggan sebelum melanjutkan.',tone:'warning',primary:'accept'};

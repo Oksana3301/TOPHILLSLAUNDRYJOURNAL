@@ -1,0 +1,5 @@
+/* Shared identity for the journal and laundry desk. */
+.brand{display:inline-flex;flex-direction:column;padding:0 12px}.brand-name{font-family:var(--hand);font-size:39px;line-height:1.05;letter-spacing:-2px;white-space:nowrap}.brand-star{display:inline-block;font-family:Arial,sans-serif;color:var(--blue-deep);font-size:29px;margin-left:7px;vertical-align:top;transform:rotate(12deg)}.brand-sub{font-family:var(--hand);font-size:24px;line-height:1.1;margin:4px 0 0;letter-spacing:-.6px}.brand-sub i{font-family:var(--sans);font-size:9px;font-weight:600;font-style:normal;letter-spacing:1px;display:inline-block;max-width:90px;line-height:1.5;margin-left:8px;text-transform:uppercase}
+.brand{color:var(--ink,#171715);text-decoration:none}
+.brand-sub i{font-family:var(--sans,Inter,system-ui,sans-serif)}
+@media(max-width:1200px){.brand-name{font-size:35px}.brand-sub i{font-size:8px;max-width:80px}}

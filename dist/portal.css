@@ -16,3 +16,58 @@ header{max-width:1440px;margin:auto;padding:24px 32px 18px;display:flex;align-it
 @media(max-width:600px){.guide-overview,.scenario-roles,.scenario-controls{grid-template-columns:1fr}.guide-overview{padding:18px}.guide-checklist>.row{align-items:flex-start}.guide-step .row{display:block}.guide-step .role-chip{margin:7px 0 0}.scenario-card summary{flex-wrap:wrap}.scenario-card summary>span:nth-child(2){flex:1;min-width:150px}.guide-checklist .row label{width:100%}.guide-step button{max-width:100%;white-space:normal}.guide-report{border-top:1px solid var(--line);padding-top:16px}}
 .order-progress{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:16px 0;color:var(--muted);font-size:14px}.order-progress progress{width:140px;height:8px;accent-color:var(--green)}.work-now{border-color:var(--blue-deep);border-top:5px solid var(--blue);padding:28px;max-width:880px}.work-now h2{font-size:34px;margin:16px 0 8px}.main-action{max-width:480px;margin:22px 0}.main-action button{justify-content:center}.waiting-note{font-size:14px;color:var(--warning);border-left:3px solid #d8bd87;padding:8px 16px}.other-actions{margin-top:24px}.section-hint{display:block;font-size:14px;font-weight:400;color:var(--muted);margin-top:4px}.order-support{max-width:880px}.order-support>.card{margin:12px 0}.order-support summary{font-weight:600}.order-support .scenario-card summary{font-weight:500}.action-proof{padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--white)}.action-proof>.row{margin-top:12px}.action-proof [data-upload-status]:empty{display:none}.order-support details[open]>summary{padding-bottom:16px;border-bottom:1px solid var(--line)}
 @media(max-width:600px){.work-now{padding:20px 16px}.work-now h2{font-size:30px}.order-progress{gap:10px}.order-progress>span:last-child{flex-basis:100%}.work-now .row.spread{align-items:flex-start}.main-action{max-width:none}.order-support{min-width:0}.action-proof{padding:12px}}
+
+/* Laundry work: one current task, with information opened on demand. */
+.laundry-desk main{max-width:1040px}
+.laundry-desk .skip-link{position:absolute;left:20px;top:-100px;background:var(--paper);padding:12px;z-index:10}
+.laundry-desk .skip-link:focus{top:8px}
+.desk-header{max-width:1040px;display:flex;gap:24px;flex-wrap:wrap}
+.desk-nav{display:flex;gap:8px;align-items:center;margin-left:auto}
+.desk-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;text-decoration:none;border-radius:12px}
+.desk-nav [aria-current=page]{background:var(--blue-soft);border:1px solid var(--blue-deep);font-weight:600}
+.desk-account{border:0;padding:0;position:relative}
+.desk-account summary{min-height:44px;display:flex;align-items:center;padding:10px;list-style:revert}
+.desk-account[open]{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.desk-account[open]>summary{margin:0}
+.desk-tools{display:flex;gap:8px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--line)}
+.desk-tools button{font-size:14px;font-weight:500}
+.desk-tools [aria-pressed=true]{background:var(--blue-soft);border-color:var(--blue-deep)}
+.queue-filters{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin:24px 0 12px}
+.queue-filters>details{grid-column:1/-1;grid-row:2;padding:4px 0;border:0}
+.queue-filters>details>summary{font-size:14px;min-height:44px;align-content:center}
+.queue-filters>button{grid-column:2;grid-row:1}
+.queue-count{font-size:14px;color:var(--muted)}
+.order-queue{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.order-card{padding:20px;background:var(--white);border:1px solid var(--line);border-radius:16px;min-width:0}
+.order-card-heading{display:flex;gap:12px;justify-content:space-between;align-items:start;flex-wrap:wrap}
+.order-card h2{font-family:Inter,system-ui,sans-serif;font-size:18px;font-weight:600;margin:0 0 6px}
+.order-card small{font-size:13px;overflow-wrap:anywhere}
+.order-card .status-badge{font-size:13px}
+.queue-next{display:flex;align-items:center;gap:8px;border-radius:10px;padding:12px;font-size:14px;min-height:48px}
+.queue-next svg{flex-shrink:0}
+.queue-pages{margin-top:20px}
+.order-page{max-width:800px;margin:auto}
+.order-heading{margin:24px 0 16px}
+.order-heading h1{font-size:32px;margin:8px 0}
+.order-reference{font-family:Inter,system-ui,sans-serif;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.laundry-desk .work-now{border:1px solid var(--blue-deep);padding:24px;margin:16px 0 24px;max-width:none}
+.laundry-desk .work-now h2{font-size:30px;margin:20px 0 8px}
+.laundry-desk .work-now p{font-size:16px;line-height:1.6}
+.laundry-desk .work-now .eyebrow{font-size:13px;letter-spacing:.8px}
+.laundry-desk .work-now .status-badge{font-size:13px}
+.laundry-desk .main-action{max-width:none;margin:20px 0 8px}
+.laundry-desk .primary{min-height:52px;border-radius:999px}
+.laundry-desk .main-action button{justify-content:center;text-align:center}
+.text-action{border:0;background:transparent;color:var(--blue-deep);font-size:14px;font-weight:500;text-decoration:underline;text-underline-offset:4px;min-height:44px;white-space:normal;padding:10px 0;justify-content:flex-start;text-align:left}
+.focus-issues{font-size:14px;background:var(--warning-soft);color:var(--warning);padding:16px 16px 16px 36px;border-radius:12px}
+.focus-issues li+li{margin-top:8px}
+.order-info-links{padding:4px 0 20px}
+.order-info-links>span{display:block;color:var(--muted);font-size:14px;margin-bottom:12px}
+.order-info-links button,.order-info-links .button{font-size:14px;font-weight:500}
+.field-requirement{color:var(--blue-deep);font-size:12px;font-weight:500}
+.laundry-desk dialog label{font-size:15px}
+.laundry-desk dialog input,.laundry-desk dialog select,.laundry-desk dialog textarea{font-size:16px}
+.laundry-desk dialog summary{min-height:44px}
+.laundry-desk dialog .dialog-footer{padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(max-width:760px){.order-queue{grid-template-columns:1fr}.desk-header{gap:12px;padding:20px}.desk-header .brand{padding:0}.desk-nav{order:3;width:100%;margin:0}.desk-nav a{flex:1}.desk-account{margin-left:auto}.laundry-desk main{padding:24px 20px max(40px,env(safe-area-inset-bottom))}.desk-heading>div{width:100%}.desk-heading>.primary{width:100%}.desk-tools{gap:6px}.desk-tools button{flex:1 1 auto}.order-card{padding:16px}.order-heading h1{font-size:30px}.laundry-desk .work-now{padding:20px 16px}.laundry-desk .work-now h2{font-size:28px}.order-info-links .row>*{flex:1 1 auto}.laundry-desk dialog{max-height:calc(100dvh - 32px)}.laundry-desk .work-now .row.spread{gap:8px}.order-card .row.spread{gap:12px}}
+@media(max-width:430px){.desk-header{column-gap:8px}.desk-account summary{padding:10px 4px}.queue-filters{grid-template-columns:minmax(0,1fr) auto}.queue-filters input{padding:12px 10px}.order-card-heading{display:block}.order-card-heading>.status-badge{margin-top:12px}}
