@@ -49,6 +49,15 @@ export async function handleVercelApi(request, env, proxy = proxySupabase) {
   const production = !env.VERCEL_ENV || env.VERCEL_ENV === 'production';
   if (!configured || !production) {
     if (path === '/api/auth/config' && request.method === 'GET') {
+      // Private runtime diagnostics: never log environment values, credentials or request headers.
+      const settingStatus = (value, valid) => !value ? 'missing' : valid ? 'ready' : 'invalid';
+      console.error('Top Hills Vercel configuration unavailable', JSON.stringify({
+        TOP_HILLS_SITE_ORIGIN: settingStatus(env.TOP_HILLS_SITE_ORIGIN, !!origin),
+        SUPABASE_URL: settingStatus(env.SUPABASE_URL, env.SUPABASE_URL === 'https://dkiqgwziefazwrcieavq.supabase.co'),
+        SUPABASE_BACKEND_TOKEN: settingStatus(env.SUPABASE_BACKEND_TOKEN, hexKey(env.SUPABASE_BACKEND_TOKEN)),
+        AUTH_SESSION_KEY: settingStatus(env.AUTH_SESSION_KEY, hexKey(env.AUTH_SESSION_KEY)),
+        production
+      }));
       return json({enabled: false, chatgptEnabled: false, provider: 'Supabase Auth',
         message: 'Login sedang disiapkan. Silakan kembali setelah pengaturan selesai.'});
     }

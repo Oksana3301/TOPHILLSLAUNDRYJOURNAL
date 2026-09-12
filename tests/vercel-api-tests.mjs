@@ -176,3 +176,25 @@ test('Local provisioning is idempotent and prints only fingerprints, never secre
     assert.equal((await stat(path.join(dir,'.env.vercel.local'))).mode&0o777,0o600);
   } finally {await rm(dir,{recursive:true,force:true});}
 });
+
+test('Configuration diagnostics identify missing or invalid settings without exposing values', async t => {
+  const logs = [];
+  t.mock.method(console, 'error', (...args) => logs.push(args));
+  const invalid = {...env, SUPABASE_URL: 'private-invalid-url',
+    SUPABASE_BACKEND_TOKEN: 'private-invalid-token', AUTH_SESSION_KEY: ''};
+  const response = await handleVercelApi(request('auth/config'), invalid,
+    async () => {throw new Error('Unconfigured request must not reach backend');});
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.enabled, false);
+  assert.equal(logs.length, 1);
+  assert.deepEqual(JSON.parse(logs[0][1]), {
+    TOP_HILLS_SITE_ORIGIN: 'ready', SUPABASE_URL: 'invalid',
+    SUPABASE_BACKEND_TOKEN: 'invalid', AUTH_SESSION_KEY: 'missing', production: true
+  });
+  const output = JSON.stringify({logs, body});
+  for (const value of [invalid.SUPABASE_URL, invalid.SUPABASE_BACKEND_TOKEN, env.SUPABASE_BACKEND_TOKEN]) {
+    assert(!output.includes(value));
+  }
+  assert(!JSON.stringify(body).includes('TOP_HILLS_SITE_ORIGIN'));
+});
