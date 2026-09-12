@@ -73,3 +73,29 @@ test('upload keeps the same order and performs no full reload or duplicate trans
 test('upload and camera preparation pause background auto-refresh',async()=>{
  const h=setup();h.run('uploading=true');h.timers[0]();assert.equal(h.calls.length,0);h.run('uploading=false;capturing=true');h.timers[0]();assert.equal(h.calls.length,0);
 });
+
+test('payment focus respects independent transfer review and partial payment attempts',()=>{
+ const h=setup();Object.assign(h.data.order,{kind:'THL',status:'READY FOR HANDOVER',identity:'CONFIRMED',custody:true,label:true,intakeProof:'photo',acceptedBy:{id:'worker'},acceptedRevision:1,customerRevision:1,priceApproved:true,price:{total:20000}});
+ Object.assign(h.data.order.pay,{status:'PENDING VERIFICATION',method:'Transfer',proof:'receipt',submittedBy:'another-worker',attempts:[{status:'PENDING'}]});
+ assert.equal(h.run("THLaundryFocus.focus(detail.order,member.role,available(detail.order)).action"),'verify-pay');
+ h.data.order.pay.submittedBy='owner-test';
+ assert.equal(h.run("THLaundryFocus.focus(detail.order,member.role,available(detail.order)).action"),null);
+ h.data.order.pay.status='UNDERPAID';h.data.order.pay.received=5000;h.data.order.pay.attempts[0].received=5000;
+ assert.equal(h.run("THLaundryFocus.focus(detail.order,member.role,available(detail.order)).action"),'create-pay');
+});
+
+test('held laundry repairs its label before resuming instead of offering an impossible closure',()=>{
+ const h=setup();Object.assign(h.data.order,{status:'ON HOLD',heldFrom:'IN PROCESS',custody:true,label:false,identity:'CONFIRMED',exceptions:[{id:'label',type:'LABEL MISSING',open:true}]});
+ assert.equal(h.run("THLaundryFocus.focus(detail.order,member.role,available(detail.order)).action"),'relabel');
+ h.data.order.label=true;h.data.order.exceptions=[{id:'approval',type:'PROCESS WITHOUT CUSTOMER APPROVAL',open:true}];h.data.order.priceApproved=false;
+ assert.equal(h.run("THLaundryFocus.focus(detail.order,member.role,available(detail.order)).action"),'resume');
+});
+
+test('journal and desk share the existing wordmark without darkening the sidebar',()=>{
+ const main=readFileSync('dist/index.html','utf8'),desk=readFileSync('dist/laundry-desk.html','utf8'),brand=readFileSync('dist/brand.css','utf8');
+ assert(main.includes('href="/brand.css"'));assert(desk.includes('href="/brand.css"'));
+ const mark='<span class="brand-name">top hills<span class="brand-star">✳</span></span><span class="brand-sub">& co. <i>jurnal usaha</i></span>';
+ assert(readFileSync('dist/app.js','utf8').includes(mark));assert(desk.includes(mark));
+ assert(brand.includes('.sidebar .brand-name,.desk-header .brand-name'));
+ assert(brand.includes('color:inherit'));assert(!brand.includes('\n.brand{color:var(--ink'));
+});

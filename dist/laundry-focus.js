@@ -5,7 +5,7 @@ function needsReturnProof(o){return o.status==='CANCELLED'&&!o.custody&&!o.retur
 function focus(o,role,actions=[]){
  const has=a=>actions.includes(a),choose=list=>list.find(has)||null;
  const item=(title,text,action=null,tone='info',waitingFor='')=>({title,text,action,tone,waitingFor,complete:false,link:null});
- const financial=()=>choose(['refund-approve','refund-pay','refund-account','refund-reconcile','payment-proof','verify-pay','create-pay','submit-set','approve-set']);
+ const financial=()=>choose(['refund-approve','refund-pay','refund-account','refund-reconcile','verify-pay','payment-proof','create-pay','submit-set','approve-set'].filter(a=>a!=='payment-proof'||o.pay.method==='Cash'||o.pay.status!=='PENDING VERIFICATION'||!o.pay.proof));
  const money=action=>item(({ 'refund-approve':'Periksa permintaan pengembalian dana','refund-pay':'Kembalikan dana pelanggan','refund-account':'Lengkapi asal dana pengembalian','refund-reconcile':'Cocokkan dana yang dikembalikan','payment-proof':'Catat bukti pembayaran','verify-pay':'Periksa pembayaran yang diterima','create-pay':'Siapkan tagihan pelanggan','submit-set':'Ajukan setoran untuk diperiksa','approve-set':'Cocokkan setoran yang masuk'})[action],'Isi bukti dan rincian yang diminta pada langkah ini.',action,'warning');
  if(o.kind==='INT'&&o.status==='LINKED')return {...item('Pencatatan barang sudah selesai','Lanjutkan pemeriksaan pada pesanan yang terhubung. Catatan awal tetap tersimpan.',null,'success'),complete:true,link:o.linkedThl};
  const issues=openIssues(o);
@@ -24,7 +24,7 @@ function focus(o,role,actions=[]){
   return item('Pastikan pemilik dan kamar','Barang tetap disimpan terpisah sampai pemilik serta kamar terkonfirmasi.',role==='Owner'?'link-int':null,'warning',role==='Owner'?'':'Owner');
  }
  if(role==='Finance'){const a=financial();return a?money(a):item('Belum ada tindakan keuangan','Petugas laundry melanjutkan penanganan barang. Rincian tersedia untuk diperiksa.',null,'info','Operator');}
- if(o.status==='ON HOLD')return item('Selesaikan penyebab pekerjaan ditahan','Periksa kendala sebelum melanjutkan tahap sebelumnya.',issues.length&&has('resolve-exception')?'resolve-exception':has('resume')?'resume':null,'danger');
+ if(o.status==='ON HOLD'){if(!o.label&&has('relabel'))return item('Pasang label yang benar','Barang masih ditahan. Foto label pengganti sebelum melanjutkan.','relabel','danger');return item('Periksa kesiapan melanjutkan','Pastikan penyebab penundaan sudah ditangani, lalu catat alasannya. Kendala lain yang masih terbuka tetap perlu diselesaikan.',has('resume')?'resume':null,'warning');}
  if(has('accept'))return item('Periksa dan terima pesanan','Cocokkan pelanggan, kamar, layanan, dan instruksi terbaru.','accept');
  if(has('receive'))return item('Catat penerimaan barang','Ambil foto langsung, hitung kantong, lalu pasang label.','receive');
  if(has('relabel'))return item('Pasang label yang benar','Foto label pesanan bersama barang agar tidak tertukar.','relabel','warning');

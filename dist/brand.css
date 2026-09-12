@@ -1,5 +1,9 @@
-/* Shared identity for the journal and laundry desk. */
-.brand{display:inline-flex;flex-direction:column;padding:0 12px}.brand-name{font-family:var(--hand);font-size:39px;line-height:1.05;letter-spacing:-2px;white-space:nowrap}.brand-star{display:inline-block;font-family:Arial,sans-serif;color:var(--blue-deep);font-size:29px;margin-left:7px;vertical-align:top;transform:rotate(12deg)}.brand-sub{font-family:var(--hand);font-size:24px;line-height:1.1;margin:4px 0 0;letter-spacing:-.6px}.brand-sub i{font-family:var(--sans);font-size:9px;font-weight:600;font-style:normal;letter-spacing:1px;display:inline-block;max-width:90px;line-height:1.5;margin-left:8px;text-transform:uppercase}
-.brand{color:var(--ink,#171715);text-decoration:none}
-.brand-sub i{font-family:var(--sans,Inter,system-ui,sans-serif)}
-@media(max-width:1200px){.brand-name{font-size:35px}.brand-sub i{font-size:8px;max-width:80px}}
+/* The existing journal wordmark, shared with the laundry desk. */
+.sidebar .brand,.desk-header .brand{display:inline-flex;flex-direction:column;padding:0 13px;color:inherit;text-decoration:none}
+.sidebar .brand-name,.desk-header .brand-name{font-family:Georgia,'Times New Roman',serif;font-size:2.25rem;font-weight:500;line-height:1.05;letter-spacing:-.055em;white-space:nowrap}
+.sidebar .brand-sub,.desk-header .brand-sub{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;line-height:1.1;margin:3px 0 0;letter-spacing:-.6px}
+.sidebar .brand-sub i,.desk-header .brand-sub i{font-family:Inter,system-ui,sans-serif;font-size:.75rem;font-weight:600;font-style:normal;letter-spacing:.015em;display:inline-block;max-width:none;line-height:1.5;margin-left:8px;text-transform:uppercase}
+.sidebar .brand-star,.desk-header .brand-star{display:inline-block;font-family:Arial,sans-serif;font-size:29px;font-weight:400;margin-left:7px;vertical-align:top;transform:rotate(12deg)}
+.sidebar .brand-star{color:#bcd6ff}.sidebar .brand-sub i{color:#c0cfe4}
+.desk-header .brand{color:var(--ink,#171715)}.desk-header .brand-star{color:var(--blue-deep,#355b88)}
+@media(max-width:760px){.desk-header .brand{padding:0}}

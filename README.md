@@ -55,7 +55,7 @@ Build menghasilkan Worker ESM di `dist/server/index.js`. Runtime aktif memilih `
 ## Halaman aplikasi
 
 - `/`: dashboard, hunian, collection, jurnal dan tiga laporan keuangan.
-- `/laundry-desk`: antrean petugas, checklist berurutan per order, panduan 28 skenario, catatan pemeriksaan peran, bukti, INT/THL, settlement dan review shift. Order tampil otomatis pada jurnal dan seluruh order.
+- `/laundry-desk`: antrean petugas, satu tindakan utama sesuai kondisi order, rincian dan riwayat sesuai kebutuhan, panduan 28 skenario, bukti, INT/THL, settlement dan review shift. Order tampil otomatis pada jurnal dan seluruh order.
 - `/checkin`: portal pelanggan dari QR kamar, atau tautan pelacakan order pribadi.
 - `/login`: login/daftar staf melalui Supabase Auth atau identitas ChatGPT yang sudah ada. Pengiriman kode email dan login akun nyata masih perlu diperiksa.
 - `/demo` dan `/sop-demo.html`: ditutup pada runtime Supabase; fixture lokal tetap tersedia untuk pengujian.
@@ -86,3 +86,5 @@ Migrasi mempertahankan data, ID akun, revisi dan histori. Backup penuh disimpan 
 Lihat [paket ganda, koreksi timbangan, dan pengecualian proses](docs/LAUNDRY-PACKAGES.md) untuk alur operator dan pelanggan. Status migrasi Supabase tetap dicatat terpisah pada handoff database.
 
 Panduan baru: [Checklist order dan sinkronisasi jurnal](docs/LAUNDRY-GUIDE-JOURNAL.md).
+
+Perapihan terbaru: [Satu tindakan utama dan batas akses pelanggan](docs/LAUNDRY-DESK-FOCUS.md).
