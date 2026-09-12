@@ -13,7 +13,7 @@
     "build:supabase": "node scripts/build-supabase.mjs",
     "test:postgres": "TOP_HILLS_TEST_DATABASE=postgres node --test tests/finance-api-tests.mjs tests/laundry-api-tests.mjs tests/staff-auth-tests.mjs tests/staff-auth-signup-tests.mjs tests/laundry-journal-tests.mjs",
     "setup:vercel": "node scripts/setup-vercel.mjs",
-    "test:vercel": "node --test tests/vercel-api-tests.mjs"
+    "test:vercel": "node --test tests/vercel-api-tests.mjs tests/vercel-host-config-tests.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2"

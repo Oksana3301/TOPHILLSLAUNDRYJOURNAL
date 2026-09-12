@@ -1,5 +1,6 @@
 import {cp, lstat, mkdir, readdir, rm, access, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
+import {vercelHostConfig} from './vercel-host-config.mjs';
 
 const source = path.resolve('dist');
 const output = path.resolve('vercel-public');
@@ -28,7 +29,7 @@ async function copyPublic(directory, target) {
 await access(path.join(source, 'index.html'));
 await rm(output, {recursive: true, force: true});
 await copyPublic(source, output);
-await writeFile(path.join(output, 'host-config.js'), 'window.THHosting = Object.freeze({chatgptLogin: false, maxUploadBytes: 4000000});\n');
+await writeFile(path.join(output, 'host-config.js'), vercelHostConfig(process.env));
 for (const entry of ['index.html', 'staff-login.html', 'laundry-desk.html', 'portal.html', 'sop-coverage.html']) {
   await access(path.join(output, entry));
 }
