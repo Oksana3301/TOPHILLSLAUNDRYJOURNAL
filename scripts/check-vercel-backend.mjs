@@ -65,5 +65,3 @@ if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production' && !pr
     console.warn('Top Hills backend verification could not complete; verify runtime separately.');
   }
 }
-
-await import('./invite-owner-once.mjs');
