@@ -5,6 +5,10 @@
   "outputDirectory": "vercel-public",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "/api/bridge?__th_path=:path*"
+    },
+    {
       "source": "/login",
       "destination": "/staff-login.html"
     },
@@ -43,5 +47,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/bridge.mjs": {
+      "maxDuration": 120
+    }
+  }
 }

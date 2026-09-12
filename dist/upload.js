@@ -1,6 +1,7 @@
 (function(root){'use strict';
 // A response confirms storage; transfer completion alone never means saved.
 function send(url,form,{headers={},onProgress=()=>{},maxBytes=5000000}={}){
+ maxBytes=Math.min(maxBytes,root.THHosting?.maxUploadBytes||maxBytes);
  const file=form.get('file');
  if(!file||!file.size)return Promise.reject(Error('Pilih file bukti terlebih dahulu.'));
  if(file.size>maxBytes)return Promise.reject(Error('File terlalu besar. Pilih file maksimal '+(maxBytes/1000000)+' MB.'));

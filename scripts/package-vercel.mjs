@@ -1,4 +1,4 @@
-import {cp, lstat, mkdir, readdir, rm, access} from 'node:fs/promises';
+import {cp, lstat, mkdir, readdir, rm, access, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 
 const source = path.resolve('dist');
@@ -16,13 +16,19 @@ async function copyPublic(directory, target) {
     const info = await lstat(from);
     if (info.isSymbolicLink()) throw new Error('Public build must not contain symbolic links');
     if (info.isDirectory()) await copyPublic(from, to);
-    else if (info.isFile()) await cp(from, to);
+    else if (info.isFile()) {
+      if (name.endsWith('.html')) {
+        const html = await readFile(from, 'utf8');
+        await writeFile(to, html.replace('</head>', '<script src="/host-config.js"></script></head>'));
+      } else await cp(from, to);
+    }
   }
 }
 
 await access(path.join(source, 'index.html'));
 await rm(output, {recursive: true, force: true});
 await copyPublic(source, output);
+await writeFile(path.join(output, 'host-config.js'), 'window.THHosting = Object.freeze({chatgptLogin: false, maxUploadBytes: 4000000});\n');
 for (const entry of ['index.html', 'staff-login.html', 'laundry-desk.html', 'portal.html', 'sop-coverage.html']) {
   await access(path.join(output, entry));
 }

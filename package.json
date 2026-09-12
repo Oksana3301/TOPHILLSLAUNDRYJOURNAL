@@ -11,7 +11,9 @@
     "test:supabase": "node --test tests/supabase-connection-tests.mjs tests/supabase-boundary-tests.mjs",
     "check:supabase": "node scripts/check-supabase.mjs",
     "build:supabase": "node scripts/build-supabase.mjs",
-    "test:postgres": "TOP_HILLS_TEST_DATABASE=postgres node --test tests/finance-api-tests.mjs tests/laundry-api-tests.mjs tests/staff-auth-tests.mjs tests/staff-auth-signup-tests.mjs tests/laundry-journal-tests.mjs"
+    "test:postgres": "TOP_HILLS_TEST_DATABASE=postgres node --test tests/finance-api-tests.mjs tests/laundry-api-tests.mjs tests/staff-auth-tests.mjs tests/staff-auth-signup-tests.mjs tests/laundry-journal-tests.mjs",
+    "setup:vercel": "node scripts/setup-vercel.mjs",
+    "test:vercel": "node --test tests/vercel-api-tests.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2"

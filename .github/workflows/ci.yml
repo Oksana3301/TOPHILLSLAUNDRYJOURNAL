@@ -56,6 +56,10 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: npm run test:auth
 
+      - name: Test Vercel API and trust boundaries
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run test:vercel
+
       - name: Test cache behavior
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node --test tests/cache-tests.mjs
@@ -71,3 +75,7 @@ jobs:
       - name: Test PostgreSQL parity with local PGlite
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: npm run test:postgres
+
+      - name: Test Vercel authentication against PostgreSQL
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: TOP_HILLS_TEST_DATABASE=postgres npm run test:vercel
