@@ -15,6 +15,29 @@ if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production' && !pr
       sessionKeyMatches: !!client && fingerprint(process.env.AUTH_SESSION_KEY) === client.sessionKeyHash
     };
     console.log('Top Hills backend credential checks', JSON.stringify(checks));
+    if (!Object.values(checks).every(Boolean)) {
+      const publishedFingerprints = new Set([
+        config.tokenHash,
+        ...config.clients.flatMap(value => [value.tokenHash, value.sessionKeyHash])
+      ].filter(Boolean));
+      const inputChecks = {
+        tokenContainsPublishedFingerprint: publishedFingerprints.has(process.env.SUPABASE_BACKEND_TOKEN),
+        sessionKeyContainsPublishedFingerprint: publishedFingerprints.has(process.env.AUTH_SESSION_KEY),
+        credentialsAreIdentical: !!process.env.SUPABASE_BACKEND_TOKEN &&
+          process.env.SUPABASE_BACKEND_TOKEN === process.env.AUTH_SESSION_KEY,
+        credentialsAreSwapped: !!client &&
+          fingerprint(process.env.SUPABASE_BACKEND_TOKEN) === client.sessionKeyHash &&
+          fingerprint(process.env.AUTH_SESSION_KEY) === client.tokenHash
+      };
+      console.warn('Top Hills backend input diagnosis', JSON.stringify(inputChecks));
+      if (inputChecks.tokenContainsPublishedFingerprint || inputChecks.sessionKeyContainsPublishedFingerprint) {
+        console.warn('Top Hills login blocked: a published fingerprint was entered as a secret. Replace that Production variable with its original value from .env.vercel.local; do not enter tokenHash or sessionKeyHash.');
+      } else if (inputChecks.credentialsAreSwapped) {
+        console.warn('Top Hills login blocked: the backend token and session key were entered in each other\'s Production fields.');
+      } else {
+        console.warn('Top Hills login blocked: Production credentials do not match the registered backend. Reconcile the original key pair before relying on login.');
+      }
+    }
     if (Object.values(checks).every(Boolean)) {
       const {handleVercelApi} = await import('../server/vercel-api.mjs');
       const response = await handleVercelApi(new Request(origin + '/api/auth/config'), process.env);
