@@ -28,7 +28,7 @@ Supabase's built-in email service currently allows only two messages per hour **
 
 Use **Masuk**, with the same identity/provider, to use an existing Owner account on another device. A different email is a separate account: after verification/login it appears under **Akses akun**, where an existing Owner can assign **Owner / Aktif**. Requested Owner in signup metadata is never an access grant.
 
-Signup now returns to the confirmation step with the email retained and supports instructions for either an email link or a code. A provider-verified signup response starts the normal pending account/session instead of incorrectly asking the user to wait for an email that was not sent. Provider tokens in confirmation URL fragments are discarded; actual sign-in still verifies credentials on the server.
+Signup now returns to the confirmation step with the email retained and supports instructions for either an email link or a code. A provider-verified signup response starts the normal pending account/session instead of incorrectly asking the user to wait for an email that was not sent. Ordinary signup fragments are discarded; actual sign-in still verifies credentials on the server. Explicit invitation and recovery callbacks use the password setup flow described below.
 
 New tests cover two fresh devices sharing a provider email limit, successful verified signup and independent device sessions, pending Owner authorization, unconfirmed responses, existing-account/password/setup errors, per-email throttling and redaction of unknown provider errors. All use isolated SQLite/PostgreSQL fixtures and fake provider responses; they do not prove real email delivery.
 
@@ -40,6 +40,14 @@ New tests cover two fresh devices sharing a provider email limit, successful ver
 4. Signup can be confirmed through the email link, followed by password login at Top Hills. The UI also accepts explicit confirmation codes. For code-based signup and password recovery, display `{{ .Token }}` clearly in the Confirm signup and Reset password email templates. This integration does not consume implicit access-token callbacks. New Free projects using default SMTP cannot customize templates; configure custom SMTP first.
 5. Check provider password policies and rate limits. Top Hills enforces 12–128 characters for new passwords and server-side attempt limits.
 6. Test signup → code confirmation → pending approval → Owner activation → login from two devices → revoke one → reset password → all previous sessions rejected. Use test identities and no real payments.
+
+## Email invitation and password setup
+
+Native Supabase invitation and recovery links may return to `/login` with a provider session in the URL fragment. The password setup page recognizes only `type=invite` or `type=recovery`, removes the fragment immediately, keeps the access token only in page memory, and asks for a new password twice. It never stores or logs the token or password.
+
+`POST /api/auth/set-password` validates the request origin, size and rate limit, then verifies the token with Supabase `GET /auth/v1/user`. Only a confirmed provider identity may update its own password. The server checks the returned stable user ID, revokes existing Top Hills email sessions, clears the app cookie and asks the user to log in normally. The endpoint neither creates membership nor grants a role from submitted email, ID or metadata.
+
+The invitation confirmation link is consumed by Supabase. The resulting access token is a temporary session credential, not itself a single-use token. Invitation delivery must target the approved Vercel login URL; verify the Auth redirect allowlist before sending. A separate explicitly authorized administrator operation must grant Owner to the exact `sb:<provider-user-id>` returned by the invitation. Existing ChatGPT accounts remain available.
 
 ## Accounts and permissions
 

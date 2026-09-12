@@ -1,4 +1,5 @@
 'use strict';
+if (!globalThis.THPasswordSetupActive) {
 const $=s=>document.querySelector(s);let chatgptEnabled=globalThis.THHosting?.chatgptLogin!==false;let enabled=false,mode='login',busy=false,timer;const waits={};const mailModes=['signup','resend','recover'];
 function waitGroup(){return mailModes.includes(mode)?'email':mode;}
 function updateWait(){const button=$('#auth-form')?.querySelector('[type=submit]');if(!button)return;const seconds=Math.max(0,Math.ceil(((waits[waitGroup()]||0)-Date.now())/1000));button.disabled=busy||!enabled||seconds>0;button.textContent=busy?'Memproses…':seconds?'Tunggu '+seconds+' detik':button.dataset.label;}
@@ -13,3 +14,4 @@ function render(){const labels={login:'Masuk',signup:'Daftar akun tim',confirm:'
 // Discard provider fragments; email/password login verifies identity on the server.
 if(/(?:^#|&)(?:access_token|refresh_token|error|error_code)=/.test(location.hash)){history.replaceState(null,'',location.pathname+location.search);message('Lanjutkan dengan email dan kata sandi untuk membuka ruang kerja.');}
 api('config').then(v=>{enabled=v.enabled;chatgptEnabled=chatgptEnabled&&v.chatgptEnabled!==false;render()}).catch(e=>{render();message(e.message,true)});
+}

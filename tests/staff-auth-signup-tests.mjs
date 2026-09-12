@@ -131,3 +131,64 @@ test('Invalid form fields do not consume valid registration attempts',async t=>{
  const f=await fixture(t);let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({user:{...verified,email_confirmed_at:null}});});
  for(let i=0;i<9;i++)assert.equal((await call(f,'signup',{...credentials,password:'short'})).status,400);assert.equal(calls,0);assert.equal(await total(f,'auth_limits'),0);assert.equal((await call(f,'signup',credentials)).status,200);
 });
+
+const setupToken='eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmaXh0dXJlIn0.fixture-signature';
+const setupPassword={accessToken:setupToken,password:'New-fictional-password-725!',passwordConfirm:'New-fictional-password-725!'};
+test('Invitation password setup verifies the provider identity, preserves Owner membership and revokes old app sessions',async t=>{
+ const f=await fixture(t);
+ t.mock.method(globalThis,'fetch',async()=>Response.json(tokens));
+ const login=await call(f,'login',credentials),oldCookie=login.headers.get('Set-Cookie').split(';')[0];
+ await f.DB.prepare("UPDATE members SET role='Owner',status='Aktif' WHERE id=?").bind('sb:'+verified.id).run();
+ const calls=[];
+ t.mock.method(globalThis,'fetch',async(url,options)=>{
+  calls.push({url,method:options.method,authorization:options.headers.Authorization,body:options.body?JSON.parse(options.body):null});
+  return Response.json(verified);
+ });
+ const result=await call(f,'set-password',{...setupPassword,email:'attacker@example.test',role:'Owner',userId:'another-user'});
+ assert.equal(result.status,200);assert.equal(result.body.next,'login');
+ assert.equal(calls.length,2);assert.equal(calls[0].method,'GET');assert.equal(calls[1].method,'PUT');
+ assert.equal(calls[0].url,'https://example.supabase.co/auth/v1/user');
+ assert.equal(calls[0].authorization,'Bearer '+setupToken);assert.deepEqual(calls[1].body,{password:setupPassword.password});
+ assert.equal((await f.DB.prepare('SELECT role FROM members WHERE id=?').bind('sb:'+verified.id).first()).role,'Owner');
+ assert.equal((await f.DB.prepare('SELECT revoked FROM staff_sessions').first()).revoked,1);
+ assert.equal((await f.DB.prepare('SELECT cipher FROM staff_sessions').first()).cipher,'');
+ await assert.rejects(()=>resolveStaffIdentity(request('sessions',null,1,oldCookie),f.env),/Sesi berakhir/);
+ assert.match(result.headers.get('Set-Cookie'),/Max-Age=0/);
+ assert(!JSON.stringify(result.body).includes(setupToken));assert(!JSON.stringify(result.body).includes(setupPassword.password));
+});
+test('Password setup cannot create a member or grant a submitted Owner role',async t=>{
+ const f=await fixture(t);t.mock.method(globalThis,'fetch',async()=>Response.json(verified));
+ const result=await call(f,'set-password',{...setupPassword,role:'Owner',email:credentials.email});
+ assert.equal(result.status,200);assert.equal(await total(f,'members'),0);assert.equal(await total(f,'staff_sessions'),0);
+});
+test('Expired, unconfirmed or mismatched invitation identities cannot complete password setup',async t=>{
+ for(const variant of ['expired','unconfirmed','mismatched']){
+  const f=await fixture(t);let count=0;
+  t.mock.method(globalThis,'fetch',async()=>{
+   count++;
+   if(variant==='expired')return Response.json({code:'bad_jwt',message:'provider-private-token'}, {status:401});
+   if(variant==='unconfirmed')return Response.json({...verified,email_confirmed_at:null});
+   return Response.json(count===1?verified:{...verified,id:'different-user'});
+  });
+  const result=await call(f,'set-password',setupPassword);
+  assert.equal(result.status,401,variant);assert.equal(count,variant==='mismatched'?2:1);
+  assert.equal(await total(f,'members'),0);assert.equal(await total(f,'staff_sessions'),0);
+  assert(!JSON.stringify(result.body).includes('provider-private-token'));
+ }
+});
+test('Malformed tokens, mismatching passwords and cross-origin password setup are rejected before contacting the provider',async t=>{
+ const f=await fixture(t);let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json(verified);});
+ for(const payload of [{...setupPassword,accessToken:''},{...setupPassword,password:'short',passwordConfirm:'short'},
+  {...setupPassword,passwordConfirm:'Different-password-123!'},{...setupPassword,accessToken:'x'.repeat(8193)}]){
+  const result=await call(f,'set-password',payload);assert([400,401].includes(result.status));
+ }
+ const badOrigin=request('set-password',setupPassword);badOrigin.headers.set('Origin','https://evil.test');
+ await assert.rejects(()=>staffAuthRoute(badOrigin,f.env),error=>error.status===403);
+ assert.equal(calls,0);assert.equal(await total(f,'auth_limits'),0);
+});
+test('Password setup is rate limited before repeatedly checking a provider token',async t=>{
+ const f=await fixture(t);let calls=0;
+ t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({code:'bad_jwt'},{status:401});});
+ for(let i=0;i<8;i++)assert.equal((await call(f,'set-password',setupPassword)).status,401);
+ const rejected=await call(f,'set-password',setupPassword);assert.equal(rejected.status,429);assert.equal(calls,8);
+});

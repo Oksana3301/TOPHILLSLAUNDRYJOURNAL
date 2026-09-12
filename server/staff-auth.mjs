@@ -54,7 +54,21 @@ export async function staffAuthRoute(req,env){const u=new URL(req.url),path=u.pa
  need(req.method==='POST','Metode tidak tersedia.',405);need(req.headers.get('Origin')===u.origin&&req.headers.get('X-Top-Hills')==='1','Permintaan lintas situs ditolak.',403);need(Number(req.headers.get('Content-Length'))<20000,'Formulir terlalu besar.',413);const p=await req.json();need(J(p).length<20000,'Formulir terlalu besar.',413);
  if(path==='/api/auth/logout'){const token=getCookie(req);if(token)await q(env,'UPDATE staff_sessions SET revoked=1,cipher=? WHERE id=?','',await hash(token)).run();return reply({redirect:req.headers.get('oai-authenticated-user-id')?'/signout-with-chatgpt?return_to=%2Flogin':'/login'},200,cookie('',0));}
  if(path==='/api/auth/revoke'){const s=await session(req,env);need(s,'Masuk terlebih dahulu.',401);if(p.all)await q(env,'UPDATE staff_sessions SET revoked=1,cipher=? WHERE user_id=?','',s.user.id).run();else await q(env,'UPDATE staff_sessions SET revoked=1,cipher=? WHERE id=? AND user_id=?','',clean(p.id),s.user.id).run();return reply({revoked:true},200,p.all||p.id===s.id?cookie('',0):undefined);}
- need(authReady(env),'Login email belum terhubung. Owner perlu mengatur Supabase Auth.',503);const email=clean(p.email,254).toLowerCase();need(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),'Alamat email tidak valid.');
+ need(authReady(env),'Login email belum terhubung. Owner perlu mengatur Supabase Auth.',503);
+ if(path==='/api/auth/set-password'){
+  need(typeof p.accessToken==='string'&&p.accessToken.length<=8192&&/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(p.accessToken),'Tautan undangan tidak valid. Buka tautan terbaru dari email.',401);
+  need(typeof p.password==='string'&&p.password.length>=12&&p.password.length<=128,'Kata sandi baru minimal 12, maksimal 128 karakter.');
+  need(p.password===p.passwordConfirm,'Ulangi kata sandi yang sama.');
+  await limit(req,env,await hash(p.accessToken),'password-setup');
+  // Only the provider may establish which account owns the email-link session.
+  // The submitted email, user ID and requested role are never used for authorization.
+  const user=identity(await provider(env,'user',undefined,p.accessToken,'GET'));
+  const updated=identity(await provider(env,'user',{password:p.password},p.accessToken,'PUT'));
+  need(updated.id===user.id,'Identitas akun tidak cocok. Buka tautan terbaru dari email.',401);
+  await q(env,'UPDATE staff_sessions SET revoked=1,cipher=? WHERE user_id=?','',user.id).run();
+  return reply({passwordUpdated:true,next:'login',message:'Kata sandi sudah disimpan. Masuk menggunakan email dan kata sandi baru.'},200,cookie('',0));
+ }
+ const email=clean(p.email,254).toLowerCase();need(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),'Alamat email tidak valid.');
  if(['signup','login','reset'].some(a=>path==='/api/auth/'+a))need(typeof p.password==='string'&&p.password.length>=(path.endsWith('/login')?1:12)&&p.password.length<=128,'Kata sandi baru minimal 12, maksimal 128 karakter.');
  if(path==='/api/auth/signup')need(clean(p.name).length>=2,'Nama minimal 2 karakter.');
  need(['signup','login','confirm','resend','recover','reset'].some(a=>path==='/api/auth/'+a),'Halaman tidak tersedia.',404);
