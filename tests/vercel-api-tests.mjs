@@ -189,7 +189,7 @@ test('Configuration diagnostics identify missing or invalid settings without exp
   assert.equal(body.enabled, false);
   assert.equal(logs.length, 1);
   assert.deepEqual(JSON.parse(logs[0][1]), {
-    TOP_HILLS_SITE_ORIGIN: 'ready', SUPABASE_URL: 'invalid',
+    TOP_HILLS_SITE_ORIGIN: 'ready',
     SUPABASE_BACKEND_TOKEN: 'invalid', AUTH_SESSION_KEY: 'missing', production: true
   });
   const output = JSON.stringify({logs, body});
@@ -197,4 +197,28 @@ test('Configuration diagnostics identify missing or invalid settings without exp
     assert(!output.includes(value));
   }
   assert(!JSON.stringify(body).includes('TOP_HILLS_SITE_ORIGIN'));
+});
+
+test('Vercel always uses the verified Top Hills project even when the host setting is missing or wrong', async t => {
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    calls++;
+    assert.equal(url, 'https://dkiqgwziefazwrcieavq.supabase.co/functions/v1/tophills-api');
+    assert.equal(options.headers.get('Authorization'), 'Bearer ' + token);
+    assert.equal(options.headers.get('X-Top-Hills-Session-Key'), sessionKey);
+    assert.equal(options.headers.get('X-Top-Hills-Source-Origin'), origin);
+    return Response.json({enabled: true});
+  });
+  for (const SUPABASE_URL of [undefined, 'malformed-url', 'https://wrong-project.example.test', env.SUPABASE_URL + '/']) {
+    const response = await handleVercelApi(request('auth/config'), {...env, SUPABASE_URL});
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).enabled, true);
+  }
+  assert.equal(calls, 4);
+  for (const settings of [{...env, SUPABASE_BACKEND_TOKEN: ''}, {...env, AUTH_SESSION_KEY: ''},
+    {...env, VERCEL_ENV: 'preview'}]) {
+    const response = await handleVercelApi(request('state'), settings);
+    assert.equal(response.status, 503);
+  }
+  assert.equal(calls, 4, 'Missing credentials and preview must not reach the backend');
 });

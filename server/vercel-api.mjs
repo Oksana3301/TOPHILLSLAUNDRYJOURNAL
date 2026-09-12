@@ -1,6 +1,8 @@
 import {isIP} from 'node:net';
 import {proxySupabase} from './supabase-proxy.mjs';
 
+// This adapter serves only the verified Top Hills project; never route credentials using a host override.
+const TOP_HILLS_SUPABASE_URL = 'https://dkiqgwziefazwrcieavq.supabase.co';
 const MAX_BODY = 4250000;
 const hexKey = value => /^[a-f0-9]{64}$/.test(value || '');
 const json = (value, status = 200) => Response.json(value, {
@@ -43,9 +45,7 @@ export async function handleVercelApi(request, env, proxy = proxySupabase) {
   }
   if (!['GET', 'HEAD', 'POST'].includes(request.method)) return json({error: 'Metode tidak tersedia.'}, 405);
   const origin = canonicalOrigin(env.TOP_HILLS_SITE_ORIGIN);
-  const configured = !!origin &&
-    env.SUPABASE_URL === 'https://dkiqgwziefazwrcieavq.supabase.co' &&
-    hexKey(env.SUPABASE_BACKEND_TOKEN) && hexKey(env.AUTH_SESSION_KEY);
+  const configured = !!origin && hexKey(env.SUPABASE_BACKEND_TOKEN) && hexKey(env.AUTH_SESSION_KEY);
   const production = !env.VERCEL_ENV || env.VERCEL_ENV === 'production';
   if (!configured || !production) {
     if (path === '/api/auth/config' && request.method === 'GET') {
@@ -53,7 +53,6 @@ export async function handleVercelApi(request, env, proxy = proxySupabase) {
       const settingStatus = (value, valid) => !value ? 'missing' : valid ? 'ready' : 'invalid';
       console.error('Top Hills Vercel configuration unavailable', JSON.stringify({
         TOP_HILLS_SITE_ORIGIN: settingStatus(env.TOP_HILLS_SITE_ORIGIN, !!origin),
-        SUPABASE_URL: settingStatus(env.SUPABASE_URL, env.SUPABASE_URL === 'https://dkiqgwziefazwrcieavq.supabase.co'),
         SUPABASE_BACKEND_TOKEN: settingStatus(env.SUPABASE_BACKEND_TOKEN, hexKey(env.SUPABASE_BACKEND_TOKEN)),
         AUTH_SESSION_KEY: settingStatus(env.AUTH_SESSION_KEY, hexKey(env.AUTH_SESSION_KEY)),
         production
@@ -84,7 +83,8 @@ export async function handleVercelApi(request, env, proxy = proxySupabase) {
     const body = request.method === 'POST' ? await readBody(request) : undefined;
     if (body === null) return json({error: 'Unggahan terlalu besar. Pilih file maksimal 4 MB.'}, 413);
     const target = new URL(path + (url.searchParams.size ? '?' + url.searchParams : ''), origin);
-    const upstream = await proxy(new Request(target, {method: request.method, headers, body}), env);
+    const upstream = await proxy(new Request(target, {method: request.method, headers, body}),
+      {...env, SUPABASE_URL: TOP_HILLS_SUPABASE_URL});
     if (path === '/api/auth/config' && request.method === 'GET' && upstream.ok) {
       const config = await upstream.json();
       return json({...config, chatgptEnabled: false, maxUploadBytes: 4000000});
